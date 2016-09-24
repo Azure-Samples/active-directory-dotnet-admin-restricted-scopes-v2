@@ -1,0 +1,18 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <h1>Reading Users & Groups</h1>
+    <p class="lead">
+        Certain company data within the Microsoft ecosystem is considered highly sensitive. In order to access this data, your application must request the proper permissions from a company administrator.
+        We call these types of permissions admin-restricted.  In this Group Sync App, we show how to use the Azure AD v2.0 endpoint to 
+        access the list of groups in a company via the <a href="https://graph.microsoft.io">Microsoft Graph</a>; reading groups is one example of an action that requires an admin-restricted permission.
+    </p>
+    <p class="lead">
+        This app uses an <strong>incremental consent</strong> pattern to acquire the necessary permissions.  First, it asks the user for sign-in permissions and to read the list of users in their company.  Then, when the user first attempts to read the list of groups
+        in their company's tenant, it requests the admin-restricted permissions from the company's administrator.  Most of the relevant logic for this app lives in <code>GroupsController.cs</code> and in <code>AccountContoller.cs</code>.
+        Sign in to get started!
+    </p>
+    <p><a href="/Account/SignIn" class="btn btn-primary btn-lg">Sign In &raquo;</a></p>
+</div>

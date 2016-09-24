@@ -1,0 +1,32 @@
+﻿@model List<GroupManager.Models.User>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<center>
+    <h1>Users for Tenant: @ViewBag.TenantId</h1>
+    <hr />
+
+    <table class="table table-striped table-hover table-condensed">
+        <thead>
+            <tr>
+                <td>User ID</td>
+                <td>Name</td>
+                <td>Job Title</td>
+                <td>Mail</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (GroupManager.Models.User user in Model)
+            {
+                <tr>
+                    <td>@user.id</td>
+                    <td>@user.displayName</td>
+                    <td>@user.jobTitle</td>
+                    <td>@user.mail</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</center>

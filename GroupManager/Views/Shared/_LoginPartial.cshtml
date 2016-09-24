@@ -1,0 +1,14 @@
+﻿@using System.Security.Claims;
+@using GroupManager.Utils;
+@if (Request.IsAuthenticated)
+{
+    ClaimsPrincipal cp = User as ClaimsPrincipal;
+    <ul class="nav navbar-nav navbar-right">
+        <li>
+            @Html.ActionLink("Hello " + cp.FindFirst(Globals.NameClaimType).Value + "!", "Manage", "Account", routeValues: null, htmlAttributes: new { title = "Manage" })
+        </li>
+        <li>
+            @Html.ActionLink("Sign out", "SignOut", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })
+        </li>
+    </ul>
+}

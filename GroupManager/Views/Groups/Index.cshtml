@@ -1,0 +1,35 @@
+﻿@model List<GroupManager.Models.Group>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<center>
+    <h1>Groups for Tenant: @ViewBag.TenantId</h1>
+    <hr />
+
+    <table class="table table-striped table-hover table-condensed">
+        <thead>
+            <tr>
+                <td>Group ID</td>
+                <td>Name</td>
+                <td>Description</td>
+                <td>Mail Nickname</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (GroupManager.Models.Group group in Model)
+            {
+                <tr>
+                    <td>@group.id</td>
+                    <td>@group.displayName</td>
+                    <td>@group.description</td>
+                    <td>@group.mailNickname</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</center>
+
+
+
