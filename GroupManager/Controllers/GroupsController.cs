@@ -64,16 +64,11 @@ namespace GroupManager.Controllers
                 GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
                 groupList[tenantId] = result.value;
             }
-            catch (MsalException ex)
+            catch (MsalUiRequiredException ex)
             {
-                if (ex.ErrorCode == "failed_to_acquire_token_silently")
-                {
-                    // If we got a token for the basic scopes, but not the admin-restricted scopes, 
-                    // then we need to ask the admin to grant permissions by by connecting their tenant.
-                    return new RedirectResult("/Account/PermissionsRequired");
-                }
-
-                return new RedirectResult("/Error?message=" + ex.Message);
+                // If we got a token for the basic scopes, but not the admin-restricted scopes, 
+                // then we need to ask the admin to grant permissions by by connecting their tenant.
+                return new RedirectResult("/Account/PermissionsRequired");
             }
             // Handle unexpected errors.
             catch (Exception ex)
@@ -88,9 +83,10 @@ namespace GroupManager.Controllers
         // Use MSAL to get a the token we need for the Microsoft Graph
         private async Task<string> GetGraphAccessToken (string userId, string[] scopes)
         {
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), new MsalSessionTokenCache(userId, HttpContext));
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes);
-            return result.Token;
+            TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
+            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
+            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, cc.Users.First());
+            return result.AccessToken;
         }
     }
 }

@@ -48,15 +48,11 @@ namespace GroupManager.Controllers
                 UserResponse result = JsonConvert.DeserializeObject<UserResponse>(json);
                 userList[tenantId] = result.value;
             }
-            catch (MsalException ex)
+            // If the tokens have expired or become invalid for any reason, ask the user to sign in again
+            catch (MsalUiRequiredException ex)
             {
-                // If the tokens have expired or become invalid for any reason, ask the user to sign in again
-                if (ex.ErrorCode == "failed_to_acquire_token_silently")
-                {
-                    return new RedirectResult("/Account/SignIn");
-                }
+                return new RedirectResult("/Account/SignIn");
 
-                return new RedirectResult("/Error?message=" + ex.Message);
             }
             // Handle unexpected errors.
             catch (Exception ex)
@@ -70,10 +66,10 @@ namespace GroupManager.Controllers
 
         private async Task<string> GetGraphAccessToken(string userId)
         {
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), new MsalSessionTokenCache(userId, HttpContext));
-            string[] scopes = new string[] { "user.readbasic.all" };
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes);
-            return result.Token;
+            TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
+            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
+            AuthenticationResult result = await cc.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, cc.Users.First());
+            return result.AccessToken;
         }
     }
 }

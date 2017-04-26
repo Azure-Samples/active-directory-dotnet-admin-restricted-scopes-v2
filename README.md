@@ -38,7 +38,7 @@ In order to request admin restricted permissions, you'll need to declare the per
 ### Download & configure the sample code
 You can download this repo as a .zip file using the button above, or run the following command:
 
-`https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2.git`
+`git clone https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2.git`
 
 Once you've downloaded the sample, open it using Visual Studio.  Open the `Utils\Globals.cs` file, and replace the following values:
 
@@ -50,7 +50,7 @@ Start the GroupManager application, and begin by signing in as an administrator 
 
 When you sign in, the app will first ask you for permission to sign you in, read your user profile, and read a list of users in your tenant.  Any user in your tenant will be able to consent to these permissions.  The application will then show a list of users from your Azure AD tenant via the Microsoft Graph, on the **Users** page.
 
-Then, navigate to the **Groups** page.  The app will try to query the Microsoft Graph for a list of users in your tenant. If it is unable to do so, it will ask you (the tenant administrator) to connect your tenant to the application, providing permission to read groups in your tenant.  Only administrators in your tenant will be able to consent to this permission.  Once administrative consent is acquired, no other users in the tenant will be asked to consent to the app going forward.
+Then, navigate to the **Groups** page.  The app will try to query the Microsoft Graph for a list of groups in your tenant. If it is unable to do so, it will ask you (the tenant administrator) to connect your tenant to the application, providing permission to read groups in your tenant.  Only administrators in your tenant will be able to consent to this permission.  Once administrative consent is acquired, no other users in the tenant will be asked to consent to the app going forward.
 
 The relevant code for this sample is in the following files:
 

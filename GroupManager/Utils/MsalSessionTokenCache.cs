@@ -7,13 +7,14 @@ using System.Threading;
 
 namespace GroupManager.Utils
 {
-    public class MsalSessionTokenCache : TokenCache
+    public class MsalSessionTokenCache 
     {
         private static ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         string UserId = string.Empty;
         string CacheId = string.Empty;
         HttpContextBase httpContext = null;
 
+        TokenCache cache = new TokenCache();
 
         public MsalSessionTokenCache(string userId, HttpContextBase httpcontext)
         {
@@ -21,9 +22,15 @@ namespace GroupManager.Utils
             UserId = userId;
             CacheId = UserId + "_TokenCache";
             httpContext = httpcontext;
-            this.AfterAccess = AfterAccessNotification;
-            this.BeforeAccess = BeforeAccessNotification;
             Load();
+        }
+
+        public TokenCache GetMsalCacheInstance()
+        {
+            cache.SetBeforeAccess(BeforeAccessNotification);
+            cache.SetAfterAccess(AfterAccessNotification);
+            Load();
+            return cache;
         }
 
         public void SaveUserStateValue(string state)
@@ -43,7 +50,7 @@ namespace GroupManager.Utils
         public void Load()
         {
             SessionLock.EnterReadLock();
-            this.Deserialize((byte[])httpContext.Session[CacheId]);
+            cache.Deserialize((byte[])httpContext.Session[CacheId]);
             SessionLock.ExitReadLock();
         }
 
@@ -52,32 +59,25 @@ namespace GroupManager.Utils
             SessionLock.EnterWriteLock();
 
             // Optimistically set HasStateChanged to false. We need to do it early to avoid losing changes made by a concurrent thread.
-            this.HasStateChanged = false;
+            cache.HasStateChanged = false;
 
             // Reflect changes in the persistent store
-            httpContext.Session[CacheId] = this.Serialize();
+            httpContext.Session[CacheId] = cache.Serialize();
             SessionLock.ExitWriteLock();
         }
 
-        // Empties the persistent store.
-        public override void Clear(string cliendId)
-        {
-            base.Clear(cliendId);
-            httpContext.Session.Remove(CacheId);
-        }
-
-        // Triggered right before ADAL needs to access the cache.
+        // Triggered right before MSAL needs to access the cache.
         // Reload the cache from the persistent store in case it changed since the last access.
         void BeforeAccessNotification(TokenCacheNotificationArgs args)
         {
             Load();
         }
 
-        // Triggered right after ADAL accessed the cache.
+        // Triggered right after MSAL accessed the cache.
         void AfterAccessNotification(TokenCacheNotificationArgs args)
         {
             // if the access operation resulted in a cache update
-            if (this.HasStateChanged)
+            if (cache.HasStateChanged)
             {
                 Persist();
             }
