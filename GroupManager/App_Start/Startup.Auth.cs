@@ -41,7 +41,7 @@ namespace GroupManager
                     Notifications = new OpenIdConnectAuthenticationNotifications()
                     {
                         SecurityTokenValidated = OnSecurityTokenValidated,
-                        AuthorizationCodeReceived = OnAuthorizationCodeRecieved,
+                        AuthorizationCodeReceived = OnAuthorizationCodeReceived,
                         AuthenticationFailed = OnAuthenticationFailed,
                     }
                 });
@@ -55,7 +55,7 @@ namespace GroupManager
             return Task.FromResult(0);
         }
 
-        private async Task OnAuthorizationCodeRecieved(AuthorizationCodeReceivedNotification context)
+        private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
             // Upon successful sign in, get & cache a token using MSAL
             string userId = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;

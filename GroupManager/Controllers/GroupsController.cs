@@ -64,7 +64,7 @@ namespace GroupManager.Controllers
                 GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
                 groupList[tenantId] = result.value;
             }
-            catch (MsalUiRequiredException ex)
+            catch (MsalUiRequiredException)
             {
                 // If we got a token for the basic scopes, but not the admin-restricted scopes, 
                 // then we need to ask the admin to grant permissions by by connecting their tenant.
