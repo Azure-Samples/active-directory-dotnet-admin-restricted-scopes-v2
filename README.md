@@ -60,7 +60,10 @@ Then, navigate to the **Groups** page.  The app will try to query the Microsoft 
 
 ## About the code
 The relevant code for this sample is in the following files:
-- Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attributes, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps). When the token is received (See method `OnAuthorizationCodeReceived`) in `App_Start\Startup.Auth.cs` the application gets a token, which MSAL.NET stores to the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when they need to access the graph, the controllers  get a token by calling their private method `GetGraphAccessToken`
+- Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attribute, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to sign-in the user. When the token is received (See method `OnAuthorizationCodeReceived`) in `Startup.Auth.cs`(https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/App_Start/Startup.Auth.cs#L58-L65)) 
+The application gets a token, which MSAL.NET stores into the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when they need to access the graph, the controllers  get a token by calling their private method `GetGraphAccessToken`
+(https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/Controllers/UsersController.cs#L67-L73)
+
 - Getting the list of users: `Controllers\UsersController.cs`
 - Getting the list of groups: `Controllers\GroupsController.cs`
 - Acquiring permissions from the tenant admin using the admin consent endpoint: `Controllers\AccountController.cs`
