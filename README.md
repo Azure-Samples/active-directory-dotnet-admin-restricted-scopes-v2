@@ -5,7 +5,7 @@ author: jmprieur
 level: 400 
 client: ASP.NET Web App
 service: Microsoft Graph 
-+endpoint: AAD V2 
+endpoint: AAD V2 
 ---
 
 # Build an app with admin restricted scopes using the v2.0 endpoint
