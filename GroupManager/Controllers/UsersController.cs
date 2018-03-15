@@ -1,19 +1,15 @@
-﻿using System;
+﻿using GroupManager.Models;
+using GroupManager.Utils;
+using Microsoft.Identity.Client;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
-using GroupManager.Models;
-using GroupManager.Utils;
-using Microsoft.Identity.Client;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace GroupManager.Controllers
 {
@@ -49,7 +45,7 @@ namespace GroupManager.Controllers
                 userList[tenantId] = result.value;
             }
             // If the tokens have expired or become invalid for any reason, ask the user to sign in again
-            catch (MsalUiRequiredException ex)
+            catch (MsalUiRequiredException)
             {
                 return new RedirectResult("/Account/SignIn");
 
