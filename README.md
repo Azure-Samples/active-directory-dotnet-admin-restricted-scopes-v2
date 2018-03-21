@@ -11,6 +11,8 @@ endpoint: AAD V2
 # Build an app with admin restricted scopes using the v2.0 endpoint
 Certain actions in the Microsoft ecosystem are considered highly sensitive, such as deleting a user from a company's tenant, changing a user's password, or reading a list of groups in a company.  Yet there are many valid reasons why applications need to perform these actions for their customers.  For this reason, some permissions are considered **admin restricted**, and require a tenant administrator to approve their use in applications.  This sample application shows how to use the [Azure AD v2.0 endpoint](http://aka.ms/aadv2) to access data in the [Microsoft Graph](https://graph.microsoft.io) that requires administrative consent.
 
+![](ReadmeFiles/Topology.png)
+
 The app is built as an ASP.NET 4.5 MVC application, using the OWIN OpenID Connect middleware to sign-in users and the preview Microsoft Authentication Library (MSAL) to perform token acquisition.  It uses an incremental consent pattern, in which it first requests a basic permission that an ordinary user can consent to; the ability to read a list of users in the user's organization.  Then, when the user tries to read a list of groups in the user's organization, it asks the administrator for the necessary admin restricted permission.  In this way, any Microsoft business user can sign up for the application without contacting their tenant administrator, and the tenant administrator is only involved when absolutely necessary.
 
 ![](ReadmeFiles/overview.png)
