@@ -7,6 +7,7 @@ client: ASP.NET Web App
 service: Microsoft Graph 
 endpoint: AAD V2 
 ---
+![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/51/badge)
 
 # Build an app with admin restricted scopes using the v2.0 endpoint
 Certain actions in the Microsoft ecosystem are considered highly sensitive, such as deleting a user from a company's tenant, changing a user's password, or reading a list of groups in a company.  Yet there are many valid reasons why applications need to perform these actions for their customers.  For this reason, some permissions are considered **admin restricted**, and require a tenant administrator to approve their use in applications.  This sample application shows how to use the [Azure AD v2.0 endpoint](http://aka.ms/aadv2) to access data in the [Microsoft Graph](https://graph.microsoft.io) that requires administrative consent.
