@@ -27,7 +27,7 @@ Follow the steps below to run the application and create your own multi-tenant w
 
 ### Register an app
 Create a new app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or follow these [detailed steps](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-app-registration).  Make sure to:
-- Use an identity that will be known by the tenant you intend to try the application with
+- Use an identity that will be known by the tenant you intend to use with the application
 - Copy down the **Application Id** assigned to your app, you'll need it soon.
 - Add the **Web** platform for your app.
 - Enter two **Redirect URI**s. The base URL for this sample, `https://localhost:44321/`, as well as `https://localhost:44321/Account/AADTenantConnected`.  These are the locations which the v2.0 endpoint will be allowed to return to after authentication.
@@ -49,8 +49,8 @@ You can download this repo as a .zip file using the button above, or run the fol
 
 Once you've downloaded the sample, open it using Visual Studio.  Open the `Utils\Globals.cs` file, and replace the following values:
 
-- Replace the `clientId` value with the application ID you copied above.
-- Replace the `clientSecret` value with the application secret you copied above.
+- Replace the `clientId` value with the application ID you copied above during App Registration.
+- Replace the `clientSecret` value with the application secret you copied above during App Registration.
 
 ### Run the sample
 Start the GroupManager application, and begin by signing in as an administrator in your Azure AD tenant.  If you don't have an Azure AD tenant for testing, you can [follow these instructions](https://azure.microsoft.com/documentation/articles/active-directory-howto-tenant/) to get one.
@@ -63,8 +63,8 @@ Then, navigate to the **Groups** page.  The app will try to query the Microsoft 
 
 ## About the code
 The relevant code for this sample is in the following files:
-- Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attribute, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to sign-in the user. When the token is received (See method `OnAuthorizationCodeReceived`) in [Startup.Auth.cs#L58-L65](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/App_Start/Startup.Auth.cs#L58-L65).
-The application gets a token, which MSAL.NET stores into the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when they need to access the graph, the controllers  get a token by calling their private method `GetGraphAccessToken`
+- Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attribute, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to sign-in the user. When the token is received (See method `OnAuthorizationCodeReceived`) in [Startup.Auth.cs#L58-L65](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/App_Start/Startup.Auth.cs#L58-L65),
+the application gets the token, which MSAL.NET stores into the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when the controllers need to access the graph, they get a token by calling their private method `GetGraphAccessToken`
 [GetGraphAccessToken](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/Controllers/UsersController.cs#L67-L73)
 
 -  Getting the list of users: `Controllers\UsersController.cs`
