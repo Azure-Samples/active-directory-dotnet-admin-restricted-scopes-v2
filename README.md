@@ -26,12 +26,12 @@ For more information on the concepts used in this sample, be sure to read the [v
 Follow the steps below to run the application and create your own multi-tenant web app.  We recommend using Visual Studio 2017 to do so.
 
 ### Register an app
-Create a new app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or follow these [detailed steps](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-app-registration).  Make sure to:
+Create a new **Converged** app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or follow these [detailed steps](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-app-registration).  Make sure to:
 - Use an identity that will be known by the tenant you intend to use with the application
 - Copy down the **Application Id** assigned to your app, you'll need it soon.
+- Generate an **Application Secret** of the type **password**, and copy it for later.  Note that in production apps you should always use certificates as your application secrets, but for this sample we will use a simple shared secret password.
 - Add the **Web** platform for your app.
 - Enter two **Redirect URI**s. The base URL for this sample, `https://localhost:44321/`, as well as `https://localhost:44321/Account/AADTenantConnected`.  These are the locations which the v2.0 endpoint will be allowed to return to after authentication.
-- Generate an **Application Secret** of the type **password**, and copy it for later.  Note that in production apps you should always use certificates as your application secrets, but for this sample we will use a simple shared secret password.
 
 If you have an existing application that you have registered in the past, feel free to use that instead of creating a new registration.
 
