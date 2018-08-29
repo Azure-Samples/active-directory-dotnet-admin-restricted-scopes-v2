@@ -85,7 +85,8 @@ namespace GroupManager.Controllers
         {
             TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
             ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, cc.Users.First());
+            var accounts = await cc.GetAccountsAsync();
+            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, accounts.First());
             return result.AccessToken;
         }
     }
