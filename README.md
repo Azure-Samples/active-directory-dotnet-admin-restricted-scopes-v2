@@ -45,7 +45,7 @@ To run this sample, you'll need:
 From your shell or command line:
 
 ```Shell
-git clone https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2.git`
+git clone https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2.git
 ```
 
 or download and extract the repository .zip file.
