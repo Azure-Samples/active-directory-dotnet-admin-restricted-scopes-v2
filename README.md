@@ -11,6 +11,8 @@ endpoint: AAD V2
 
 # Build an app with admin restricted scopes using the v2.0 endpoint
 
+> This version of the sample uses MSAL.NET 2.x. If you are interested in a version using MSAL.NET 3.x use the [master](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2) branch
+
 ## About this sample
 
 ### Overview
