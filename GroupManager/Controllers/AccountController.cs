@@ -25,7 +25,7 @@ namespace GroupManager.Controllers
         {
             HttpContext.GetOwinContext().Authentication.SignOut(CookieAuthenticationDefaults.AuthenticationType);
 
-            MsalAppBuilder.ClearTokenCaches(this.HttpContext);
+            MsalAppBuilder.ClearUserTokenCache(this.HttpContext);
             Response.Redirect("/");
         }
 

@@ -24,7 +24,7 @@ namespace GroupManager.Utils
             return clientapp;
         }
 
-        public static void ClearTokenCaches(HttpContextBase httpContext)
+        public static void ClearUserTokenCache(HttpContextBase httpContext)
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
@@ -34,8 +34,7 @@ namespace GroupManager.Utils
 
             MSALPerUserSessionTokenCache userTokenCache = new MSALPerUserSessionTokenCache(clientapp.UserTokenCache, httpContext);
             userTokenCache.Clear();
-            MSALAppSessionTokenCache appTokenCache = new MSALAppSessionTokenCache(clientapp.AppTokenCache, Globals.ClientId, httpContext);
-            appTokenCache.Clear();
+
         }
     }
 }
