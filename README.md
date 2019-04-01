@@ -54,31 +54,24 @@ or download and extract the repository .zip file.
 
 ### Step 2:  Register the sample with your Azure Active Directory tenant
 
-#### Choose the Azure AD tenant where you want to create your applications
-
-As a first step you'll need to:
-
-1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
-1. If your account gives you access to more than one tenant, select your account in the top right corner, and set your portal session to the desired Azure AD tenant
-   (using **Switch Directory**).
-1. In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations (Preview)**.
-
 #### Register the service app (restricted-scopes-v2)
 
-1. In **App registrations (Preview)** page, select **New registration**.
+1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
+1. Select **New registration**.
 1. When the **Register an application page** appears, enter your application's registration information:
    - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `restricted-scopes-v2`.
-   - In the **Supported account types** section, select **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
-   - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs.
-       - `https://localhost:44321/`
-       - `https://localhost:44321/Account/AADTenantConnected`
+   - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
+     > Note that there are more than one redirect URIs. You'll need to add them from the **Authentication** tab later after the app has been created successfully.
 1. Select **Register** to create the application.
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
-1. In the list of pages for the app, select **Authentication**.
+1. In the list of pages for the app, select **Authentication**..
+   - In the Redirect URIs section, select **Web** in the combo-box and enter the following redirect URIs.
+       - `https://localhost:44321/`
+       - `https://localhost:44321/Account/AADTenantConnected`
    - In the **Advanced settings** section set **Logout URL** to `https://localhost:44321/Account/EndSession`
-   - In the **Advanced settings** | **Implicit grant** section, check **Access tokens** and **ID tokens** as this sample requires 
-   the [Implicit grant flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
-   sign-in the user, and call an API.
+   - In the **Advanced settings** | **Implicit grant** section, check **ID tokens** as this sample requires
+     the [Implicit grant flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
+     sign-in the user, and call an API.
 1. Select **Save**.
 1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
 
@@ -93,6 +86,11 @@ As a first step you'll need to:
    - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **email**, **profile**, **offline_access**, **User.Read**, **Group.Read.All**, **User.ReadBasic.All**. Use the search box if necessary.
    - Select the **Add permissions** button
+
+1. Once you've run the script, be sure to follow the manual steps. Indeed Azure AD PowerShell does not create an app which audience is Work or School + personal accounts, even if this registration is already possible from the Azure portal:
+     In the list of pages for the application registration of the application, select **Manifest**
+     - search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
+     - Select **Save**
 
 If you have an existing application that you have registered in the past, feel free to use that instead of creating a new registration.
 

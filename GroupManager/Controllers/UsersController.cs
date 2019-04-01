@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager.Controllers
 {
@@ -62,10 +63,8 @@ namespace GroupManager.Controllers
 
         private async Task<string> GetGraphAccessToken(string userId)
         {
-            TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
-            var accounts = await cc.GetAccountsAsync();
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, accounts.First());
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication(this.HttpContext);
+            AuthenticationResult result = await cc.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, ClaimsPrincipal.Current.ToIAccount());
             return result.AccessToken;
         }
     }

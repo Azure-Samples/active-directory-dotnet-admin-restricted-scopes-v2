@@ -13,6 +13,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
+using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager
 {
@@ -59,8 +60,8 @@ namespace GroupManager
         {
             // Upon successful sign in, get & cache a token using MSAL
             string userId = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MsalSessionTokenCache(userId, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication(context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase);
+
             AuthenticationResult result = await cc.AcquireTokenByAuthorizationCodeAsync(context.Code, new[] { "user.readbasic.all" });
         }
 

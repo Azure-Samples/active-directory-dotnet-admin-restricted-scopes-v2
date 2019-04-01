@@ -19,7 +19,7 @@ namespace GroupManager.Utils
         public const string NameClaimType = "name";
 
         // WARNING! You really shouldn't store important security artifacts in code like this.
-        public const string ClientSecret = "[Enter your client secret as obtained from the app registration portal]";
-        public const string ClientId = "[Enter your client ID as obtained from the app registration portal]";
+        public const string ClientSecret = "5WZX7q2rsB0ttX9yFYu91vYyLzAD6pcI9PA+tXnQghU=";
+        public const string ClientId = "0da26f91-0de3-4d92-a904-8768f7db17c1";
     }
 }

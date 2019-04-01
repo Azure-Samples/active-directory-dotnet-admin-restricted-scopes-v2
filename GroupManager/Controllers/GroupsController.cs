@@ -13,6 +13,7 @@ using GroupManager.Utils;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager.Controllers
 {
@@ -79,15 +80,17 @@ namespace GroupManager.Controllers
             ViewBag.TenantId = tenantId;
             return View(groupList[tenantId]);
         }
-        
+
         // Use MSAL to get a the token we need for the Microsoft Graph
-        private async Task<string> GetGraphAccessToken (string userId, string[] scopes)
+        private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
         {
-            TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
-            var accounts = await cc.GetAccountsAsync();
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, accounts.First());
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication(this.HttpContext);
+
+            //var accounts = await cc.GetAccountsAsync();
+            AuthenticationResult result = await cc.AcquireTokenForClientAsync(scopes);
             return result.AccessToken;
         }
+
+
     }
 }
