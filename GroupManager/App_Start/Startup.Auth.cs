@@ -60,7 +60,7 @@ namespace GroupManager
         {
             // Upon successful sign in, get & cache a token using MSAL
             string userId = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication(context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase);
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
 
             AuthenticationResult result = await cc.AcquireTokenByAuthorizationCodeAsync(context.Code, new[] { "user.readbasic.all" });
         }

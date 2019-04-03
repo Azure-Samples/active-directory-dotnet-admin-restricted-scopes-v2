@@ -11,7 +11,7 @@ namespace GroupManager.Utils
 {
     public static class MsalAppBuilder
     {
-        public static IConfidentialClientApplication BuildConfidentialClientApplication(HttpContextBase httpContext)
+        public static IConfidentialClientApplication BuildConfidentialClientApplication()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
@@ -19,12 +19,12 @@ namespace GroupManager.Utils
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
-            MSALPerUserSessionTokenCache userTokenCache = new MSALPerUserSessionTokenCache(clientapp.UserTokenCache, httpContext);
-            MSALAppSessionTokenCache appTokenCache = new MSALAppSessionTokenCache(clientapp.AppTokenCache, Globals.ClientId, httpContext);
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            MSALAppMemoryTokenCache appTokenCache = new MSALAppMemoryTokenCache(clientapp.AppTokenCache, Globals.ClientId);
             return clientapp;
         }
 
-        public static void ClearUserTokenCache(HttpContextBase httpContext)
+        public static void ClearUserTokenCache()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
@@ -32,9 +32,8 @@ namespace GroupManager.Utils
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
-            MSALPerUserSessionTokenCache userTokenCache = new MSALPerUserSessionTokenCache(clientapp.UserTokenCache, httpContext);
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
             userTokenCache.Clear();
-
         }
     }
 }

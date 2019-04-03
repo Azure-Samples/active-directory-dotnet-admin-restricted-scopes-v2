@@ -49,7 +49,6 @@ namespace GroupManager.Controllers
             catch (MsalUiRequiredException)
             {
                 return new RedirectResult("/Account/SignIn");
-
             }
             // Handle unexpected errors.
             catch (Exception ex)
@@ -63,7 +62,7 @@ namespace GroupManager.Controllers
 
         private async Task<string> GetGraphAccessToken(string userId)
         {
-            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication(this.HttpContext);
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await cc.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, ClaimsPrincipal.Current.ToIAccount());
             return result.AccessToken;
         }

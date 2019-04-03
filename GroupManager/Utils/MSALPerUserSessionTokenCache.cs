@@ -117,7 +117,6 @@ namespace GroupManager.Utils
         /// </summary>
         public void PersistUserTokenCache()
         {
-
             string cacheKey = this.GetSignedInUsersUniqueId();
 
             if (string.IsNullOrWhiteSpace(cacheKey))
@@ -152,7 +151,6 @@ namespace GroupManager.Utils
 
             try
             {
-
                 // Reflect changes in the persistent store
                 this.HttpContext.Session.Remove(cacheKey);
             }
@@ -164,7 +162,6 @@ namespace GroupManager.Utils
             // Nulls the currently deserialized instance
             this.LoadUserTokenCacheFromSession();
         }
-
 
         /// <summary>
         /// if you want to ensure that no concurrent write take place, use this notification to place a lock on the entry

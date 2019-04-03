@@ -1,5 +1,5 @@
-﻿/************************************************************************************************
-The MIT License (MIT)
+﻿/*
+ The MIT License (MIT)
 
 Copyright (c) 2015 Microsoft Corporation
 
@@ -20,20 +20,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-***********************************************************************************************/
+*/
 
 using Microsoft.Identity.Client;
 using System;
-using System.Threading;
-using System.Web;
+using System.Runtime.Caching;
 
 namespace GroupManager.Utils
 {
     /// <summary>
-    /// An implementation of token cache for Confidential clients backed by Http session.
+    /// An implementation of token cache for Confidential clients backed by MemoryCache.
+    /// MemoryCache is useful in Api scenarios where there is no HttpContext to cache data.
     /// </summary>
     /// <seealso cref="https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/token-cache-serialization"/>
-    public class MSALAppSessionTokenCache
+    public class MSALAppMemoryTokenCache
     {
         /// <summary>
         /// The application cache key
@@ -41,25 +41,27 @@ namespace GroupManager.Utils
         internal readonly string AppCacheId;
 
         /// <summary>
-        /// The HTTP context being used by this app
+        /// The backing MemoryCache instance
         /// </summary>
-        internal HttpContextBase HttpContextInstance = null;
+        internal readonly MemoryCache memoryCache = MemoryCache.Default;
+
+        /// <summary>
+        /// The duration till the tokens are kept in memory cache. In production, a higher value , upto 90 days is recommended.
+        /// </summary>
+        private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
 
         /// <summary>
         /// The internal handle to the client's instance of the Cache
         /// </summary>
         private ITokenCache ApptokenCache;
 
-        private static ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="MSALAppSessionTokenCache"/> class.
+        /// Initializes a new instance of the <see cref="MSALAppMemoryTokenCache"/> class.
         /// </summary>
         /// <param name="tokenCache">The client's instance of the token cache.</param>
         /// <param name="clientId">The application's id (Client ID).</param>
-        public MSALAppSessionTokenCache(ITokenCache tokenCache, string clientId, HttpContextBase httpcontext)
+        public MSALAppMemoryTokenCache(ITokenCache tokenCache, string clientId)
         {
-            this.HttpContextInstance = httpcontext;
             this.AppCacheId = clientId + "_AppTokenCache";
 
             if (this.ApptokenCache == null)
@@ -70,7 +72,7 @@ namespace GroupManager.Utils
                 this.ApptokenCache.SetBeforeWrite(this.AppTokenCacheBeforeWriteNotification);
             }
 
-            this.LoadAppTokenCacheFromSession();
+            this.LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -79,47 +81,35 @@ namespace GroupManager.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void AppTokenCacheBeforeWriteNotification(TokenCacheNotificationArgs args)
         {
-            // Since we are using a SessionCache ,whose methods are threads safe, we need not to do anything in this handler.
+            // Since we are using a MemoryCache ,whose methods are threads safe, we need not to do anything in this handler.
         }
 
         /// <summary>
-        /// Loads the application's tokens from session cache.
+        /// Loads the application's token from memory cache.
         /// </summary>
-        private void LoadAppTokenCacheFromSession()
+        private void LoadAppTokenCacheFromMemory()
         {
-            SessionLock.EnterReadLock();
-
-            this.ApptokenCache.DeserializeMsalV3((byte[])HttpContextInstance.Session[this.AppCacheId]);
-
-            SessionLock.ExitReadLock();
+            // Ideally, methods that load and persist should be thread safe. MemoryCache.Get() is thread safe.
+            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(this.AppCacheId);
+            this.ApptokenCache.DeserializeMsalV3(tokenCacheBytes);
         }
 
         /// <summary>
-        /// Persists the application token's to session cache.
+        /// Persists the application's token to the cache.
         /// </summary>
         private void PersistAppTokenCache()
         {
-            SessionLock.EnterWriteLock();
-
+            // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
             // Reflect changes in the persistence store
-            HttpContextInstance.Session[this.AppCacheId] = this.ApptokenCache.SerializeMsalV3();
-
-            SessionLock.ExitWriteLock();
+            this.memoryCache.Set(this.AppCacheId, this.ApptokenCache.SerializeMsalV3(), this.cacheDuration);
         }
 
-        /// <summary>
-        /// Clears the TokenCache's copy of this user's cache.
-        /// </summary>
         public void Clear()
         {
-            SessionLock.EnterWriteLock();
-
-            HttpContextInstance.Session[this.AppCacheId] = null;
-
-            SessionLock.ExitWriteLock();
+            this.memoryCache.Remove(this.AppCacheId);
 
             // Nulls the currently deserialized instance
-            this.LoadAppTokenCacheFromSession();
+            this.LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -128,7 +118,7 @@ namespace GroupManager.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            this.LoadAppTokenCacheFromSession();
+            this.LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
