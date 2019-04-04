@@ -32,6 +32,7 @@ namespace GroupManager.Utils
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
+            // We only clear the user's tokens.
             MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
             userTokenCache.Clear();
         }

@@ -2,14 +2,15 @@
 services: active-directory
 platforms: dotnet
 author: jmprieur
-level: 400 
+level: 400
 client: ASP.NET Web App
-service: Microsoft Graph 
-endpoint: AAD V2 
+service: Microsoft Graph
+endpoint: AAD V2
 ---
-![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/51/badge)
 
 # Build an app with admin restricted scopes using the v2.0 endpoint
+
+![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/51/badge)
 
 ## About this sample
 
@@ -60,7 +61,7 @@ or download and extract the repository .zip file.
 1. Select **New registration**.
 1. When the **Register an application page** appears, enter your application's registration information:
    - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `restricted-scopes-v2`.
-   - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
+   - Change **Supported account types** to **Accounts in any organizational directory**.
      > Note that there are more than one redirect URIs. You'll need to add them from the **Authentication** tab later after the app has been created successfully.
 1. Select **Register** to create the application.
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.

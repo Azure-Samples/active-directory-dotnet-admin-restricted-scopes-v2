@@ -21,7 +21,7 @@
       "ReplyUrls": "https://localhost:44321/,https://localhost:44321/Account/AADTenantConnected",
       "LogoutUrl": "https://localhost:44321/Account/EndSession",
       "PasswordCredentials": "Auto",      
-      "Audience" : "AzureADandPersonalMicrosoftAccount",
+      "Audience" : "AzureADMultipleOrgs",
       "IsAvailableToOtherTenants":true,
       "RequiredResourcesAccess": [
         {
