@@ -20,7 +20,6 @@ namespace GroupManager.Utils
                   .Build();
 
             MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
-            MSALAppMemoryTokenCache appTokenCache = new MSALAppMemoryTokenCache(clientapp.AppTokenCache, Globals.ClientId);
             return clientapp;
         }
 
