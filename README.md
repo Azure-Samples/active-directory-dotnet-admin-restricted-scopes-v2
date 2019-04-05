@@ -55,6 +55,43 @@ or download and extract the repository .zip file.
 
 ### Step 2:  Register the sample with your Azure Active Directory tenant
 
+There is one project in this sample. To register it, you can:
+
+- either follow the steps [Step 2: Register the sample with your Azure Active Directory tenant](#step-2-register-the-sample-with-your-azure-active-directory-tenant) and [Step 3:  Configure the sample to use your Azure AD tenant](#choose-the-azure-ad-tenant-where-you-want-to-create-your-applications)
+- or use PowerShell scripts that:
+  - **automatically** creates the Azure AD applications and related objects (passwords, permissions, dependencies) for you
+  - modify the Visual Studio projects' configuration files.
+
+If you want to use this automation:
+
+1. On Windows, run PowerShell and navigate to the root of the cloned directory
+1. In PowerShell run:
+
+   ```PowerShell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+   ```
+
+1. Run the script to create your Azure AD application and configure the code of the sample application accordingly.
+1. In PowerShell run:
+
+   ```PowerShell
+   .\AppCreationScripts\Configure.ps1
+   ```
+
+   > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
+
+1. Open the Visual Studio solution and click start to run the code.
+
+If you don't want to use this automation, follow the steps below.
+
+#### Choose the Azure AD tenant where you want to create your applications
+
+As a first step you'll need to:
+
+1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Azure AD tenant.
+
 #### Register the service app (restricted-scopes-v2)
 
 1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
@@ -88,11 +125,6 @@ or download and extract the repository .zip file.
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **email**, **profile**, **offline_access**, **User.Read**, **Group.Read.All**, **User.ReadBasic.All**. Use the search box if necessary.
    - Select the **Add permissions** button
 
-1. Once you've run the script, be sure to follow the manual steps. Indeed Azure AD PowerShell does not create an app which audience is Work or School + personal accounts, even if this registration is already possible from the Azure portal:
-     In the list of pages for the application registration of the application, select **Manifest**
-     - search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
-     - Select **Save**
-
 If you have an existing application that you have registered in the past, feel free to use that instead of creating a new registration.
 
 ### Step 3:  Configure the sample to use your Azure AD tenant
@@ -103,9 +135,14 @@ Open the solution in Visual Studio to configure the projects
 
 #### Configure the  project
 
-1. Open the `Utils\Globals.cs` file, and replace the following values:
-1. Replace the `clientId` value with the application ID you copied above during App Registration.
-1. Replace the `clientSecret` value with the application secret you copied above during App Registration.
+> Note: if you used the setup scripts, the changes below will have been applied for you
+
+1. Open the `GroupManager\Web.Config` file
+1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `restricted-scopes-v2` application copied from the Azure portal.
+1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `restricted-scopes-v2` app, in the Azure portal.
+1. Find the app key `ida:Domain` and replace the existing value with your Azure AD tenant name.
+1. Find the app key `ida:TenantId` and replace the existing value with your Azure AD tenant ID.
+1. Find the app key `ida:PostLogoutRedirectUri` and replace the existing value with the base address of the restricted-scopes-v2 project (by default `https://localhost:44321/`).
 
 ### Step 4: Run the sample
 
@@ -116,6 +153,8 @@ When you sign in, the app will first ask you for permission to sign you in, read
 Then, navigate to the **Groups** page.  The app will try to query the Microsoft Graph for a list of groups in your tenant. If it is unable to do so, it will ask you (the tenant administrator) to connect your tenant to the application, providing permission to read groups in your tenant.  Only administrators in your tenant will be able to consent to this permission.  Once administrative consent is acquired, no other users in the tenant will be asked to consent to the app going forward.
 
 ![](ReadmeFiles/AdminConsentRequired.png)
+
+> Did the sample not work for you as expected? Did you encounter issues trying this sample? Then please reach out to us using the [GitHub Issues](../../issues) page.
 
 ## About the code
 
@@ -131,11 +170,42 @@ the application gets the token, which MSAL.NET stores into the token cache (See 
 
 - Acquiring permissions from the tenant admin using the admin consent endpoint: `Controllers\AccountController.cs`
 
+## How to deploy this sample to Azure
+
+This project has one WebApp  project. To deploy them to Azure Web Sites, you'll need, for each one, to:
+
+- create an Azure Web Site
+- publish the Web App / Web APIs to the web site, and
+- update its client(s) to call the web site instead of IIS Express.
+
+### Create and publish the `restricted-scopes-v2` to an Azure Web Site
+
+1. Sign in to the [Azure portal](https://portal.azure.com).
+1. Click `Create a resource` in the top left-hand corner, select **Web** --> **Web App**, and give your web site a name, for example, `restricted-scopes-v2-contoso.azurewebsites.net`.
+1. Thereafter select the `Subscription`, `Resource Group`, `App service plan and Location`. `OS` will be **Windows** and `Publish` will be **Code**.
+1. Click `Create` and wait for the App Service to be created.
+1. Once you get the `Deployment succeeded` notification, then click on `Go to resource` to navigate to the newly created App service.
+1. Once the web site is created, locate it it in the **Dashboard** and click it to open **App Services** **Overview** screen.
+1. From the **Overview** tab of the App Service, download the publish profile by clicking the **Get publish profile** link and save it.  Other deployment mechanisms, such as from source control, can also be used.
+1. Switch to Visual Studio and go to the restricted-scopes-v2 project.  Right click on the project in the Solution Explorer and select **Publish**.  Click **Import Profile** on the bottom bar, and import the publish profile that you downloaded earlier.
+1. Click on **Configure** and in the `Connection tab`, update the Destination URL so that it is a `https` in the home page url, for example [https://restricted-scopes-v2-contoso.azurewebsites.net](https://restricted-scopes-v2-contoso.azurewebsites.net). Click **Next**.
+1. On the Settings tab, make sure `Enable Organizational Authentication` is NOT selected.  Click **Save**. Click on **Publish** on the main screen.
+1. Visual Studio will publish the project and automatically open a browser to the URL of the project.  If you see the default web page of the project, the publication was successful.
+
+### Update the Active Directory tenant application registration for `restricted-scopes-v2`
+
+1. Navigate back to to the [Azure portal](https://portal.azure.com).
+In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations (Preview)**.
+1. In the resultant screen, select the `restricted-scopes-v2` application.
+1. In the **Authentication** | page for your application, update the Logout URL fields with the address of your service, for example [https://restricted-scopes-v2-contoso.azurewebsites.net](https://restricted-scopes-v2-contoso.azurewebsites.net)
+1. From the *Branding* menu, update the **Home page URL**, to the address of your service, for example [https://restricted-scopes-v2-contoso.azurewebsites.net](https://restricted-scopes-v2-contoso.azurewebsites.net). Save the configuration.
+1. Add the same URL in the list of values of the *Authentication -> Redirect URIs* menu. If you have multiple redirect urls, make sure that there a new entry using the App service's Uri for each redirect url.
+
 ## Community Help and Support
 
 Use [Stack Overflow](http://stackoverflow.com/questions/tagged/msal) to get support from the community.
 Ask your questions on Stack Overflow first and browse existing issues to see if someone has asked your question before.
-Make sure that your questions or comments are tagged with [`adal` `msal` `dotnet`].
+Make sure that your questions or comments are tagged with [ `msal` `dotnet`].
 
 If you find a bug in the sample, please raise the issue on [GitHub Issues](../../issues).
 

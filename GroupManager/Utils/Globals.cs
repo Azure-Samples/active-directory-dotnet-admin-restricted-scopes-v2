@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Configuration;
 
 namespace GroupManager.Utils
 {
@@ -18,8 +19,24 @@ namespace GroupManager.Utils
         public const string BasicSignInScopes = "openid profile email offline_access user.readbasic.all";
         public const string NameClaimType = "name";
 
-        // WARNING! You really shouldn't store important security artifacts in code like this.
-        public const string ClientId = "[Enter your client ID as obtained from the app registration portal]";
-        public const string ClientSecret = "[Enter your client secret as obtained from the app registration portal]";
+        /// <summary>
+        /// The Client ID is used by the application to uniquely identify itself to Azure AD.
+        /// </summary>
+        public static string ClientId { get; } = ConfigurationManager.AppSettings["ida:ClientId"];
+
+        /// <summary>
+        /// The ClientSecret is a credential used to authenticate the application to Azure AD.  Azure AD supports password and certificate credentials.
+        /// </summary>
+        public static string ClientSecret { get; } = ConfigurationManager.AppSettings["ida:ClientSecret"];
+
+        /// <summary>
+        /// The Post Logout Redirect Uri is the URL where the user will be redirected after they sign out.
+        /// </summary>
+        public static string PostLogoutRedirectUri { get; } = ConfigurationManager.AppSettings["ida:PostLogoutRedirectUri"];
+
+        /// <summary>
+        /// The TenantId is the DirectoryId of the Azure AD tenant being used in the sample
+        /// </summary>
+        public static string TenantId { get; } = ConfigurationManager.AppSettings["ida:TenantId"];
     }
 }
