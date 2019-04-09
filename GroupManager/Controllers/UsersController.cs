@@ -63,9 +63,9 @@ namespace GroupManager.Controllers
         private async Task<string> GetGraphAccessToken(string userId)
         {
             TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
-            var accounts = await cc.GetAccountsAsync();
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, accounts.First());
+            ConfidentialClientApplication clientapp = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
+            var accounts = await clientapp.GetAccountsAsync();
+            AuthenticationResult result = await clientapp.AcquireTokenSilentAsync(new string[] { "user.readbasic.all" }, accounts.First());
             return result.AccessToken;
         }
     }
