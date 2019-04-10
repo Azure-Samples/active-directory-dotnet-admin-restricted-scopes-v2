@@ -5,7 +5,6 @@ using System.Web;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager.Utils
 {

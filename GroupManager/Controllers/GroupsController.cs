@@ -13,7 +13,6 @@ using GroupManager.Utils;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager.Controllers
 {
@@ -86,7 +85,7 @@ namespace GroupManager.Controllers
         {
             IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
 
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, ClaimsPrincipal.Current.ToIAccount());
+            AuthenticationResult result = await cc.AcquireTokenSilent(scopes, ClaimsPrincipal.Current.ToIAccount()).ExecuteAsync(); 
             return result.AccessToken;
         }
     }

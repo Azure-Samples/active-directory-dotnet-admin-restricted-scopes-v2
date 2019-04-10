@@ -11,7 +11,6 @@ using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
-using Microsoft.Identity.Client.AppConfig;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -62,7 +61,7 @@ namespace GroupManager
             string userId = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
             IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
 
-            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCodeAsync(context.Code, new[] { "user.readbasic.all" });
+            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(new[] { "user.readbasic.all" }, context.Code).ExecuteAsync();
         }
 
         private Task OnSecurityTokenValidated(SecurityTokenValidatedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> context)
