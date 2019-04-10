@@ -8,6 +8,7 @@ using GroupManager.Utils;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OpenIdConnect;
+using Microsoft.Identity.Client;
 
 namespace GroupManager.Controllers
 {
@@ -22,6 +23,8 @@ namespace GroupManager.Controllers
         public void SignOut()
         {
             HttpContext.GetOwinContext().Authentication.SignOut(CookieAuthenticationDefaults.AuthenticationType);
+
+            MsalAppBuilder.ClearUserTokenCache();
             Response.Redirect("/");
         }
 

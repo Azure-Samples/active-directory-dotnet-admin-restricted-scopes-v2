@@ -66,7 +66,7 @@ namespace GroupManager.Controllers
             }
             catch (MsalUiRequiredException)
             {
-                // If we got a token for the basic scopes, but not the admin-restricted scopes, 
+                // If we got a token for the basic scopes, but not the admin-restricted scopes,
                 // then we need to ask the admin to grant permissions by by connecting their tenant.
                 return new RedirectResult("/Account/PermissionsRequired");
             }
@@ -79,14 +79,13 @@ namespace GroupManager.Controllers
             ViewBag.TenantId = tenantId;
             return View(groupList[tenantId]);
         }
-        
+
         // Use MSAL to get a the token we need for the Microsoft Graph
-        private async Task<string> GetGraphAccessToken (string userId, string[] scopes)
+        private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
         {
-            TokenCache userTokenCache = new MsalSessionTokenCache(userId, HttpContext).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
-            var accounts = await cc.GetAccountsAsync();
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, accounts.First());
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+
+            AuthenticationResult result = await cc.AcquireTokenSilent(scopes, ClaimsPrincipal.Current.ToIAccount()).ExecuteAsync(); 
             return result.AccessToken;
         }
     }
