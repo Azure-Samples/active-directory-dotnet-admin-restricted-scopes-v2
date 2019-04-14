@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Claims;
-using System.IdentityModel.Tokens;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using GroupManager.Utils;
 using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
-using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
+using Microsoft.Identity.Client.AppConfig;
+using Microsoft.Owin.Security.Notifications;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace GroupManager
 {
@@ -32,7 +33,7 @@ namespace GroupManager
                     RedirectUri = Globals.RedirectUri,
                     PostLogoutRedirectUri = Globals.RedirectUri,
                     Scope = Globals.BasicSignInScopes, // a basic set of permissions for user sign in & profile access
-                    TokenValidationParameters = new System.IdentityModel.Tokens.TokenValidationParameters
+                    TokenValidationParameters = new TokenValidationParameters
                     {
                         // We'll inject our own issuer validation logic below.
                         ValidateIssuer = false,
@@ -59,8 +60,8 @@ namespace GroupManager
         {
             // Upon successful sign in, get & cache a token using MSAL
             string userId = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MsalSessionTokenCache(userId, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-            ConfidentialClientApplication cc = new ConfidentialClientApplication(Globals.ClientId, Globals.RedirectUri, new ClientCredential(Globals.ClientSecret), userTokenCache, null);
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+
             AuthenticationResult result = await cc.AcquireTokenByAuthorizationCodeAsync(context.Code, new[] { "user.readbasic.all" });
         }
 

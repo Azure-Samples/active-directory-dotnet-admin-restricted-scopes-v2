@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using Microsoft.Identity.Client.AppConfig;
 
 namespace GroupManager.Controllers
 {
@@ -48,7 +49,6 @@ namespace GroupManager.Controllers
             catch (MsalUiRequiredException)
             {
                 return new RedirectResult("/Account/SignIn");
-
             }
             // Handle unexpected errors.
             catch (Exception ex)
