@@ -84,8 +84,9 @@ namespace GroupManager.Controllers
         private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
         {
             IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+            IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
 
-            AuthenticationResult result = await cc.AcquireTokenSilent(scopes, ClaimsPrincipal.Current.ToIAccount()).ExecuteAsync(); 
+            AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync(); 
             return result.AccessToken;
         }
     }

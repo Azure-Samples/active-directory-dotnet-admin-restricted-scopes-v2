@@ -19,7 +19,7 @@ namespace GroupManager.Controllers
         private ConcurrentDictionary<string, List<GroupManager.Models.User>> userList = new ConcurrentDictionary<string, List<GroupManager.Models.User>>();
 
         [Authorize]
-        // GET: Group
+        // GET: Users
         public async Task<ActionResult> Index()
         {
             string tenantId = ClaimsPrincipal.Current.FindFirst(Globals.TenantIdClaimType).Value;
@@ -62,7 +62,9 @@ namespace GroupManager.Controllers
         private async Task<string> GetGraphAccessToken(string userId)
         {
             IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = await cc.AcquireTokenSilent(new string[] { "user.readbasic.all" }, ClaimsPrincipal.Current.ToIAccount()).ExecuteAsync();
+            var userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+            AuthenticationResult result = await cc.AcquireTokenSilent(new string[] { "user.readbasic.all" }, userAccount).ExecuteAsync();
             return result.AccessToken;
         }
     }
