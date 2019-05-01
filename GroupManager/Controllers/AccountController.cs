@@ -14,10 +14,11 @@ namespace GroupManager.Controllers
 {
     public class AccountController : Controller
     {
-        public void SignIn()
+        public void SignIn(string redirectUrl)
         {
+            redirectUrl = redirectUrl ?? "/Users";
             // Trigger a sign in using a basic set of scopes
-            HttpContext.GetOwinContext().Authentication.Challenge(new AuthenticationProperties { RedirectUri = "/Users" }, OpenIdConnectAuthenticationDefaults.AuthenticationType);
+            HttpContext.GetOwinContext().Authentication.Challenge(new AuthenticationProperties { RedirectUri = redirectUrl },OpenIdConnectAuthenticationDefaults.AuthenticationType);
         }
 
         public void SignOut()

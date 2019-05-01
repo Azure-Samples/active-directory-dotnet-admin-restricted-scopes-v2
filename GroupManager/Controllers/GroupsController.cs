@@ -33,6 +33,10 @@ namespace GroupManager.Controllers
                 // Try to get a token for our basic set of scopes
                 string token = await GetGraphAccessToken(userId, new string[] { "user.readbasic.all" });
             }
+            catch (MsalUiRequiredException)
+            {
+                return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
+            }
             catch (MsalException ex)
             {
                 if (ex.ErrorCode == "failed_to_acquire_token_silently")
