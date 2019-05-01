@@ -203,7 +203,6 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
-    <Compile Include="Utils\MSALAccount.cs" />
     <Compile Include="Utils\MsalAppBuilder.cs" />
     <Compile Include="Utils\ClaimPrincipalExtension.cs" />
     <Compile Include="Utils\Constants.cs" />

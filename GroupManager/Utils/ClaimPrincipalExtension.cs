@@ -1,6 +1,5 @@
 ﻿using Microsoft.Identity.Client;
 using System.Security.Claims;
-using System.Linq;
 
 namespace GroupManager.Utils
 {
