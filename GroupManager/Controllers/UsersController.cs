@@ -44,9 +44,15 @@ namespace GroupManager.Controllers
                 UserResponse result = JsonConvert.DeserializeObject<UserResponse>(json);
                 userList[tenantId] = result.value;
             }
-            // If the tokens have expired or become invalid for any reason, ask the user to sign in again
+
             catch (MsalUiRequiredException)
             {
+                /*  
+                    If the tokens have expired or become invalid for any reason, ask the user to sign in again.
+                    Another cause of this exception is when you restart the app using InMemory cache. 
+                    It will get wiped out while the user will be authenticated still because of their cookies, requiring the TokenCache to be initialized again 
+                    through the sign in flow.
+                */
                 return new RedirectResult("/Account/SignIn");
             }
             // Handle unexpected errors.

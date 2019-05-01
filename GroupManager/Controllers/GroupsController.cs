@@ -33,8 +33,16 @@ namespace GroupManager.Controllers
                 // Try to get a token for our basic set of scopes
                 string token = await GetGraphAccessToken(userId, new string[] { "user.readbasic.all" });
             }
+
+            
             catch (MsalUiRequiredException)
             {
+                /*  
+                    If the tokens have expired or become invalid for any reason, ask the user to sign in again.
+                    Another cause of this exception is when you restart the app using InMemory cache. 
+                    It will get wiped out while the user will be authenticated still because of their cookies, requiring the TokenCache to be initialized again 
+                    through the sign in flow.
+                */
                 return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
             }
             catch (MsalException ex)
@@ -68,6 +76,7 @@ namespace GroupManager.Controllers
                 GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
                 groupList[tenantId] = result.value;
             }
+
             catch (MsalUiRequiredException)
             {
                 // If we got a token for the basic scopes, but not the admin-restricted scopes,
