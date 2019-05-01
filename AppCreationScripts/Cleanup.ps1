@@ -55,8 +55,9 @@ This function removes the Azure AD applications for the sample. These applicatio
     if ($app)
     {
         Remove-AzureADApplication -ObjectId $app.ObjectId
-        Write-Host "Removed restricted-scopes-v2."
+        Write-Host "Removed."
     }
-    }
+
+}
 
 Cleanup -Credential $Credential -tenantId $TenantId
