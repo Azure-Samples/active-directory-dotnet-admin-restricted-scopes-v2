@@ -39,7 +39,7 @@ To run this sample, you'll need:
 - [Visual Studio 2017](https://aka.ms/vsdownload)
 - An Internet connection
 - An Azure Active Directory (Azure AD) tenant. For more information on how to get an Azure AD tenant, see [How to get an Azure AD tenant](https://azure.microsoft.com/en-us/documentation/articles/active-directory-howto-tenant/)
-- A user account in your Azure AD tenant, or a Microsoft personal account. You need to have at least one account which is a directory administrator to test the features which require an administrator to consent.
+- A user account in your Azure AD tenant. This sample will not work with a Microsoft account (formerly Windows Live account). Therefore, if you signed in to the [Azure portal](https://portal.azure.com) with a Microsoft account and have never created a user account in your directory before, you need to do that now. You need to have at least one account which is a directory administrator to test the features which require an administrator to consent.
 
 ### Step 1:  Clone or download this repository
 
@@ -53,7 +53,7 @@ or download and extract the repository .zip file.
 
 > Given that the name of the sample is pretty long, and so are the name of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
 
-### Step 2:  Register the sample with your Azure Active Directory tenant
+### Step 2:  Register the sample application with your Azure Active Directory tenant
 
 There is one project in this sample. To register it, you can:
 
@@ -102,7 +102,7 @@ As a first step you'll need to:
      > Note that there are more than one redirect URIs. You'll need to add them from the **Authentication** tab later after the app has been created successfully.
 1. Select **Register** to create the application.
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
-1. In the list of pages for the app, select **Authentication**..
+1. From the app's Overview page, select the **Authentication** section.
    - In the Redirect URIs section, select **Web** in the combo-box and enter the following redirect URIs.
        - `https://localhost:44321/`
        - `https://localhost:44321/Account/AADTenantConnected`
@@ -118,14 +118,12 @@ As a first step you'll need to:
    - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
    - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
      so record it as soon as it is visible from the Azure portal.
-1. In the list of pages for the app, select **API permissions**
+1. Select the **API permissions** section
    - Click the **Add a permission** button and then,
    - Ensure that the **Microsoft APIs** tab is selected
    - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **email**, **profile**, **offline_access**, **User.Read**, **Group.Read.All**, **User.ReadBasic.All**. Use the search box if necessary.
    - Select the **Add permissions** button
-
-If you have an existing application that you have registered in the past, feel free to use that instead of creating a new registration.
 
 ### Step 3:  Configure the sample to use your Azure AD tenant
 
@@ -133,7 +131,7 @@ In the steps below, "ClientID" is the same as "Application ID" or "AppId".
 
 Open the solution in Visual Studio to configure the projects
 
-#### Configure the  project
+#### Configure the service project
 
 > Note: if you used the setup scripts, the changes below will have been applied for you
 
@@ -143,6 +141,7 @@ Open the solution in Visual Studio to configure the projects
 1. Find the app key `ida:Domain` and replace the existing value with your Azure AD tenant name.
 1. Find the app key `ida:TenantId` and replace the existing value with your Azure AD tenant ID.
 1. Find the app key `ida:PostLogoutRedirectUri` and replace the existing value with the base address of the restricted-scopes-v2 project (by default `https://localhost:44321/`).
+
 
 ### Step 4: Run the sample
 
