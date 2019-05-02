@@ -3,11 +3,14 @@
     ViewBag.Title = "PermissionsRequired";
 }
 
-<center>
-    <h2>Connect Your AAD Tenant</h2>
-    <h4>In order to begin listing groups from your company, an admin needs to grant permissions to the Group Manager App.</h4>
-    <p class="text-danger">@ViewBag.Error</p>
-    <a class="btn btn-primary btn-lg" href="/Account/ConnectAADTenant">Connect your tenant</a>
-</center>
+    <center>
+        <h2>Connect Your AAD Tenant</h2>
+        <h4>In order to begin listing groups from your company, an admin needs to grant permissions to the Group Manager App.</h4>
+        <div class="alert alert-info" role="alert">
+            You will be <b>signed out</b> after clicking the button to refresh your cached grants. 
+        </div>
+        <p class="text-danger">@ViewBag.Error</p>
+        <a class="btn btn-primary btn-lg" href="/Account/ConnectAADTenant">Connect your tenant</a>
+    </center>
 
 

@@ -52,7 +52,7 @@ namespace GroupManager.Controllers
             // Note: Here the state parameter will contain whatever you passed in the outgoing request. You can
             // use this state to encode any information that you wish to track during execution of this request.
 
-            Response.Redirect("/Groups");
+            Response.Redirect("/Account/SignOut");
         }
 
         public ActionResult PermissionsRequired(string error)
