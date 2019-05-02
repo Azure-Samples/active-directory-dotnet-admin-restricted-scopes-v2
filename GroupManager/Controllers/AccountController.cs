@@ -44,8 +44,9 @@ namespace GroupManager.Controllers
         {
             if (error != null)
             {
-                // If the admin did not grant permissions, ask them to do so again
-                Response.Redirect("/Account/PermissionsRequired?error=" + error_description);
+				// If the admin did not grant permissions, ask them to do so again
+				TempData["Error"] = error_description;
+                Response.Redirect("/Account/PermissionsRequired");
                 return;
             }
 
@@ -55,9 +56,9 @@ namespace GroupManager.Controllers
             Response.Redirect("/Account/SignOut");
         }
 
-        public ActionResult PermissionsRequired(string error)
+        public ActionResult PermissionsRequired()
         {
-            ViewBag.Error = error;
+            ViewBag.Error = TempData["Error"];
             return View();
         }
     }
