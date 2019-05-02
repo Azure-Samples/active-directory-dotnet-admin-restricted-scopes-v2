@@ -61,5 +61,14 @@ namespace GroupManager.Controllers
             ViewBag.Error = TempData["Error"];
             return View();
         }
-    }
+
+		/// <summary>
+		/// Called by Azure AD. Here we end the user's session, but don't redirect to AAD for sign out.
+		/// </summary>
+		public void EndSession()
+		{
+			MsalAppBuilder.ClearUserTokenCache();
+			HttpContext.GetOwinContext().Authentication.SignOut(CookieAuthenticationDefaults.AuthenticationType);
+		}
+	}
 }
