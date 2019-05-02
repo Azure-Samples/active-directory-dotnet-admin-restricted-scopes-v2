@@ -194,7 +194,7 @@ This project has one WebApp  project. To deploy them to Azure Web Sites, you'll 
 ### Update the Active Directory tenant application registration for `restricted-scopes-v2`
 
 1. Navigate back to to the [Azure portal](https://portal.azure.com).
-In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations (Preview)**.
+In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations**.
 1. In the resultant screen, select the `restricted-scopes-v2` application.
 1. In the **Authentication** | page for your application, update the Logout URL fields with the address of your service, for example [https://restricted-scopes-v2-contoso.azurewebsites.net](https://restricted-scopes-v2-contoso.azurewebsites.net)
 1. From the *Branding* menu, update the **Home page URL**, to the address of your service, for example [https://restricted-scopes-v2-contoso.azurewebsites.net](https://restricted-scopes-v2-contoso.azurewebsites.net). Save the configuration.
