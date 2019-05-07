@@ -1,33 +1,62 @@
-﻿using Microsoft.Identity.Client;
+﻿/************************************************************************************************
+The MIT License (MIT)
+
+Copyright (c) 2015 Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+***********************************************************************************************/
+
+using Microsoft.Identity.Client;
 using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace GroupManager.Utils
 {
-    public static class MsalAppBuilder
-    {
-        public static IConfidentialClientApplication BuildConfidentialClientApplication()
-        {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
-                  .WithClientSecret(Globals.ClientSecret)
-                  .WithRedirectUri(Globals.RedirectUri)
-                  .WithAuthority(new Uri(Globals.Authority))
-                  .Build();
+	public static class MsalAppBuilder
+	{
+		public static IConfidentialClientApplication BuildConfidentialClientApplication()
+		{
+			IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+				  .WithClientSecret(Globals.ClientSecret)
+				  .WithRedirectUri(Globals.RedirectUri)
+				  .WithAuthority(new Uri(Globals.Authority))
+				  .Build();
 
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
-            return clientapp;
-        }
+			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+			return clientapp;
+		}
 
-        public static void ClearUserTokenCache()
-        {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
-                  .WithClientSecret(Globals.ClientSecret)
-                  .WithRedirectUri(Globals.RedirectUri)
-                  .WithAuthority(new Uri(Globals.Authority))
-                  .Build();
+		public static async Task ClearUserTokenCache()
+		{
+			IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+				  .WithClientSecret(Globals.ClientSecret)
+				  .WithRedirectUri(Globals.RedirectUri)
+				  .WithAuthority(new Uri(Globals.Authority))
+				  .Build();
 
-            // We only clear the user's tokens.
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
-            userTokenCache.Clear();
-        }
-    }
+			// We only clear the user's tokens.
+			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+			var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+			userTokenCache.Clear();
+			await clientapp.RemoveAsync(userAccount);
+		}
+	}
 }
