@@ -159,15 +159,221 @@ Then, navigate to the **Groups** page.  The app will try to query the Microsoft 
 
 The relevant code for this sample is in the following files:
 
+  
+
 - Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attribute, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to sign-in the user. When the token is received (See method `OnAuthorizationCodeReceived`) in [Startup.Auth.cs#L58-L65](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/App_Start/Startup.Auth.cs#L58-L65),
+
 the application gets the token, which MSAL.NET stores into the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when the controllers need to access the graph, they get a token by calling their private method `GetGraphAccessToken`
+
 [GetGraphAccessToken](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/Controllers/UsersController.cs#L67-L73)
+
+  
 
 - Getting the list of users: `Controllers\UsersController.cs`
 
+  
+
 - Getting the list of groups: `Controllers\GroupsController.cs`
 
+  
+
 - Acquiring permissions from the tenant admin using the admin consent endpoint: `Controllers\AccountController.cs`
+
+
+
+### Sign In
+As it is standard practice for ASP.NET MVC apps, the sign-in functionality is implemented with the OpenID Connect OWIN middleware. Here there's a relevant snippet from the middleware initialization:
+```csharp
+			app.UseOpenIdConnectAuthentication(
+				new OpenIdConnectAuthenticationOptions
+				{
+					Authority = Globals.Authority,
+					ClientId = Globals.ClientId,
+					RedirectUri = Globals.RedirectUri,
+					PostLogoutRedirectUri = Globals.RedirectUri,
+					Scope = Globals.BasicSignInScopes, // a basic set of permissions for user sign in & profile access
+					TokenValidationParameters = new TokenValidationParameters
+					{
+						// In a real application you would use ValidateIssuer = true for additional checks and security.
+						ValidateIssuer = false,
+						NameClaimType = "name",
+					},
+					Notifications = new OpenIdConnectAuthenticationNotifications()
+					{
+						SecurityTokenValidated = OnSecurityTokenValidated,
+						AuthorizationCodeReceived = OnAuthorizationCodeReceived,
+						AuthenticationFailed = OnAuthenticationFailed,
+					}
+				});
+```
+Important things to notice:
+ - The list of scopes includes both entries that are used for the sign-in function (`openid profile email`) and for the token acquisition function (`offline_access`  is required to obtain refresh_tokens as well).  `user.readbasic.all`  is required for getting access tokens that can be used on `/Users/Index` page to list all the users on the organization.
+ - In this sample, the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign-up function - and the sign-in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.
+
+
+### Initial token acquisition
+This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info the  [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens)  and artifacts (in this case, an  [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an  [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of getting all the users on the organization.
+
+This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application (from the controllers' actions).
+
+The redemption takes place in the  `AuthorizationCodeReceived`  notification of the authorization middleware. Here there's the relevant code:
+```csharp
+		 private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
+        {
+            // Upon successful sign in, get & cache a token using MSAL
+			IConfidentialClientApplication confidentialClient = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+				  .WithClientSecret(Globals.ClientSecret)
+				  .WithRedirectUri(Globals.RedirectUri)
+				  .WithAuthority(new Uri(Globals.Authority))
+				  .Build();
+
+			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(confidentialClient.UserTokenCache, new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+
+			AuthenticationResult result = await confidentialClient.AcquireTokenByAuthorizationCode(new[] { "user.readbasic.all" }, context.Code).ExecuteAsync();
+        }
+```
+Important things to notice:
+
+-   The  `IConfidentialClientApplication`  is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
+-   The scope requested by  `AcquireTokenByAuthorizationCode`  is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+- The `MSALPerUserMemoryTokenCache` is created and hooked in the `UserTokenCache` used by `IConfidentialClientApplication`. At this point, if you inspect `ClaimsPrinciple.Current` you will notice that the Identity is still unauthenticated and it has no claims, but `MSALPerUserMemoryTokenCache` needs the claims to work properly. Because of this sync problem, we are using the constructor that receives `ClaimsPrincipal` as argument and we are getting the claims from the object `AuthorizationCodeReceivedNotification context`. This object contains the property `AuthenticationTicket.Identity`, which is a `ClaimsIdentity`, where all the props are filled.
+
+Anywhere else in the code, the `IConfidentialClientApplication` is created in a separate function in the `MsalAppBuilder` class
+```csharp
+		public static IConfidentialClientApplication BuildConfidentialClientApplication()
+        {
+            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+                  .WithClientSecret(Globals.ClientSecret)
+                  .WithRedirectUri(Globals.RedirectUri)
+                  .WithAuthority(new Uri(Globals.Authority))
+                  .Build();
+
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            return clientapp;
+        }
+```
+Important things to notice:
+
+-   The method builds an instance of the IConfidentialClientApplication using the new  [builder pattern introduced by MSAL v3.X](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-Applications).
+- We don't need to send the `ClaimsPrincipal` argument since at this stage, `ClaimsPrincipal.Current` is set up.
+-   `MSALPerUserMemoryTokenCache`  is a sample implementation of a custom MSAL token cache, which saves tokens in a  [MemoryCache](https://docs.microsoft.com/en-us/dotnet/framework/performance/caching-in-net-framework-applications)  instance shared across the web app. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
+
+### Consuming Graph API
+This sample consumes the graph api in two places: `UsersController.cs` and `GroupsController.cs`. To consume Graph, we need to have a token with the scopes required by the API then call the endpoint attaching this token on the request header as `Bearer`. 
+
+See details about [bearer token](https://tools.ietf.org/html/rfc6750). Lets see the `UsersController.cs` example first:
+```csharp
+			try
+            {
+                // Get a token for the Microsoft Graph
+                string token = await GetGraphAccessToken(userId);
+
+                // Construct the query
+                HttpClient client = new HttpClient();
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphUsersApi);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                // Ensure a successful response
+                HttpResponseMessage response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                // Populate the data store with the first page of groups
+                string json = await response.Content.ReadAsStringAsync();
+                UserResponse result = JsonConvert.DeserializeObject<UserResponse>(json);
+                userList[tenantId] = result.value;
+            }
+
+            catch (MsalUiRequiredException)
+            {
+                /*  
+                    If the tokens have expired or become invalid for any reason, ask the user to sign in again.
+                    Another cause of this exception is when you restart the app using InMemory cache. 
+                    It will get wiped out while the user will be authenticated still because of their cookies, requiring the TokenCache to be initialized again 
+                    through the sign in flow.
+                */
+                return new RedirectResult("/Account/SignIn");
+            }
+```
+```csharp
+		private async Task<string> GetGraphAccessToken(string userId)
+        {
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+            var userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+            AuthenticationResult result = await cc.AcquireTokenSilent(new string[] { "user.readbasic.all" }, userAccount).ExecuteAsync();
+            return result.AccessToken;
+        }
+```
+Important things to notice:
+- Since we asked the scope `user.readbasic.all` on the sign in process, we have it cached already and the token is valid to consume the Graph API `https://graph.microsoft.com/v1.0/users`. So no additional consent is required in this case.
+- [ ](#memoryTokenProblem)We are catching `MsalUiRequiredException` and redirecting the user to the sign in page. This exception will be thrown when we try to get a token and the user's token got expired or invalid. In this particular sample, we are persisting the cache in memory (which is not ideal on a WebApp scenario) just for simplicity, but this results in a problem. If you restart the application, the cache will be wiped out but the user will still be logged in because of their cookies. If we try to get a token for that user, a `MsalUiRequiredException` will be thrown an they will have to sign in again just to retrieve the cache. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don’t need to retrieve new ones more often than necessary. 
+
+### Requesting additional consent
+Another place that we are consuming Graph API is on `GroupsController.cs`. Differently from the `UsersController.cs` example, the scope required here is `group.read.all` which is not included on the Sign In process. This means that the user will be prompted for another consent screen on the first time they try to access the `Groups` page. 
+```csharp
+			try
+			{
+				// Get a token for our admin-restricted set of scopes Microsoft Graph
+				string token = await GetGraphAccessToken(userId, new string[] { "group.read.all" });
+
+				// Construct the groups query
+				HttpClient client = new HttpClient();
+				HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
+				request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+				// Ensure a successful response
+				HttpResponseMessage response = await client.SendAsync(request);
+				response.EnsureSuccessStatusCode();
+
+				// Populate the data store with the first page of groups
+				string json = await response.Content.ReadAsStringAsync();
+				GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
+				groupList[tenantId] = result.value;
+			}
+
+			catch (MsalUiRequiredException ex)
+			{
+				if (ex.ErrorCode == "user_null")
+				{
+					/*  
+					  If the tokens have expired or become invalid for any reason, ask the user to sign in again.
+					  Another cause of this exception is when you restart the app using InMemory cache. 
+					  It will get wiped out while the user will be authenticated still because of their cookies, requiring the TokenCache to be initialized again 
+					  through the sign in flow.
+					*/
+					return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
+				}
+
+				else if (ex.ErrorCode == "invalid_grant")
+				{
+
+					// If we got a token for the basic scopes, but not the admin-restricted scopes,
+					// then we need to ask the admin to grant permissions by by connecting their tenant.
+					return new RedirectResult("/Account/PermissionsRequired");
+				}
+				else
+					return new RedirectResult("/Error?message=" + ex.Message);
+
+			}
+			// Handle unexpected errors.
+			catch (Exception ex)
+			{
+				return new RedirectResult("/Error?message=" + ex.Message);
+			}
+```
+```csharp
+		private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
+		{
+			IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+			IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+			AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+			return result.AccessToken;
+		}
+```
+Important things to notice:
+- We are requesting an Access Token with the scope `group.read.all`. To get this token we call [AcquireTokenSilent]([https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet](https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet)) method, which attempts to acquire it from the user token cache first avoiding extra call to the Identity Provider.
+- We are expecting a `MsalUiRequiredException` that could be caused by the memory token cache behavior mentioned <a name="memoryTokenProblem">above</a> or because the user haven't granted permission to `group.read.all` yet. If that is the case, we redirect them to do so, using the pattern: https://login.microsoftonline.com/{tenantId}/adminconsent?client_id={clientId}&state={myStateValue}&redirect_uri={urlToBeRedirectedAfterConsent}.
 
 ## How to deploy this sample to Azure
 
