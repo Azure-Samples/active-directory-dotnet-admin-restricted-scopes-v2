@@ -78,22 +78,17 @@ namespace GroupManager
 
 		private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
 		{
-			// Upon successful sign in, get & cache a token using MSAL
-			IConfidentialClientApplication confidentialClient = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
-				  .WithClientSecret(Globals.ClientSecret)
-				  .WithRedirectUri(Globals.RedirectUri)
-				  .WithAuthority(new Uri(Globals.Authority))
-				  .Build();
-
 			/*
 			 The `MSALPerUserMemoryTokenCache` is created and hooked in the `UserTokenCache` used by `IConfidentialClientApplication`.
 			 At this point, if you inspect `ClaimsPrinciple.Current` you will notice that the Identity is still unauthenticated and it has no claims,
 			 but `MSALPerUserMemoryTokenCache` needs the claims to work properly. Because of this sync problem, we are using the constructor that
 			 receives `ClaimsPrincipal` as argument and we are getting the claims from the object `AuthorizationCodeReceivedNotification context`.
-			 This object contains the property `AuthenticationTicket.Identity`, which is a `ClaimsIdentity`, where all the props are filled
+			 This object contains the property `AuthenticationTicket.Identity`, which is a `ClaimsIdentity`, created from the token received from 
+			 Azure AD and has a full set of claims.
 			 */
-			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(confidentialClient.UserTokenCache, new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+			IConfidentialClientApplication confidentialClient = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
 
+			// Upon successful sign in, get & cache a token using MSAL
 			AuthenticationResult result = await confidentialClient.AcquireTokenByAuthorizationCode(new[] { "user.readbasic.all" }, context.Code).ExecuteAsync();
 		}
 

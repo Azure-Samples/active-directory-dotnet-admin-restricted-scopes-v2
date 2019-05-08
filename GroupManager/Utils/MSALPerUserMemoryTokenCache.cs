@@ -75,15 +75,6 @@ namespace GroupManager.Utils
 			this.Initialize(tokenCache, user);
 		}
 
-		/// <summary>
-		/// Explores the Claims of a signed-in user (if available) to populate the unique Id of this cache's instance.
-		/// </summary>
-		/// <returns>The signed in user's object Id , if available in the ClaimsPrincipal.Current instance</returns>
-		private string GetSignedInUsersUniqueId()
-		{
-			return ClaimsPrincipal.Current?.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
-		}
-
 		/// <summary>Initializes the cache instance</summary>
 		/// <param name="tokenCache">The ITokenCache passed through the constructor</param>
 		/// <param name="user">The signed-in user for whom the cache needs to be established..</param>

@@ -33,13 +33,18 @@ namespace GroupManager.Utils
 	{
 		public static IConfidentialClientApplication BuildConfidentialClientApplication()
 		{
+			return BuildConfidentialClientApplication(ClaimsPrincipal.Current);
+		}
+
+		public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
+		{
 			IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
 				  .WithClientSecret(Globals.ClientSecret)
 				  .WithRedirectUri(Globals.RedirectUri)
 				  .WithAuthority(new Uri(Globals.Authority))
 				  .Build();
 
-			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
 			return clientapp;
 		}
 
@@ -55,8 +60,8 @@ namespace GroupManager.Utils
 			MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
 			var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
 
-			userTokenCache.Clear();
 			await clientapp.RemoveAsync(userAccount);
+			userTokenCache.Clear();
 		}
 	}
 }
