@@ -52,7 +52,7 @@ namespace GroupManager.Utils
 		private ITokenCache UserTokenCache;
 
 		/// <summary>
-		/// Once the user signes in, this will not be null and can be ontained via a call to Thread.CurrentPrincipal
+		/// Once the user signes in, this will not be null and can be obtained via a call to Thread.CurrentPrincipal
 		/// </summary>
 		internal ClaimsPrincipal SignedInUser;
 
