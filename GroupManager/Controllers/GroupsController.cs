@@ -22,12 +22,11 @@ namespace GroupManager.Controllers
 		public async Task<ActionResult> Index()
 		{
 			string tenantId = ClaimsPrincipal.Current.FindFirst(Globals.TenantIdClaimType).Value;
-			string userId = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
 
 			try
 			{
 				// Get a token for our admin-restricted set of scopes Microsoft Graph
-				string token = await GetGraphAccessToken(userId, new string[] { "group.read.all" });
+				string token = await GetGraphAccessToken(new string[] { "group.read.all" });
 
 				// Construct the groups query
 				HttpClient client = new HttpClient();
@@ -74,8 +73,12 @@ namespace GroupManager.Controllers
 			return View(groupList[tenantId]);
 		}
 
-		// Use MSAL to get a the token we need for the Microsoft Graph
-		private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
+		/// <summary>
+		/// We obtain access token for Microsoft Graph with the scope "group.read.all". Since this access token was not obtained during the initial sign in process 
+		/// (OnAuthorizationCodeReceived), the user will be prompted to consent again.
+		/// </summary>
+		/// <returns></returns>
+		private async Task<string> GetGraphAccessToken(string[] scopes)
 		{
 			IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
 			IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());

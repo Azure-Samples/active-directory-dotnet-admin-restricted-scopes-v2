@@ -22,12 +22,11 @@ namespace GroupManager.Controllers
 		public async Task<ActionResult> Index()
 		{
 			string tenantId = ClaimsPrincipal.Current.FindFirst(Globals.TenantIdClaimType).Value;
-			string userId = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
 
 			try
 			{
 				// Get a token for the Microsoft Graph
-				string token = await GetGraphAccessToken(userId);
+				string token = await GetGraphAccessToken();
 
 				// Construct the query
 				HttpClient client = new HttpClient();
@@ -63,7 +62,12 @@ namespace GroupManager.Controllers
 			return View(userList[tenantId]);
 		}
 
-		private async Task<string> GetGraphAccessToken(string userId)
+		/// <summary>
+		/// We obtain access token for Microsoft Graph with the scope "user.readbasic.all". Since this access token was obtained during the initial sign in process 
+		/// (OnAuthorizationCodeReceived) and cached, the user will not be prompted to sign in again.
+		/// </summary>
+		/// <returns></returns>
+		private async Task<string> GetGraphAccessToken()
 		{
 			IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
 			var userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
