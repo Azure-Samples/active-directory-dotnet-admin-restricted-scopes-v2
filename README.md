@@ -39,7 +39,7 @@ To run this sample, you'll need:
 - [Visual Studio 2017](https://aka.ms/vsdownload)
 - An Internet connection
 - An Azure Active Directory (Azure AD) tenant. For more information on how to get an Azure AD tenant, see [How to get an Azure AD tenant](https://azure.microsoft.com/en-us/documentation/articles/active-directory-howto-tenant/)
-- A user account in your Azure AD tenant, or a Microsoft personal account. You need to have at least one account which is a directory administrator to test the features which require an administrator to consent.
+- A user account in your Azure AD tenant. This sample will not work with a Microsoft account (formerly Windows Live account). Therefore, if you signed in to the [Azure portal](https://portal.azure.com) with a Microsoft account and have never created a user account in your directory before, you need to do that now. You need to have at least one account which is a directory administrator to test the features which require an administrator to consent.
 
 ### Step 1:  Clone or download this repository
 
@@ -53,7 +53,7 @@ or download and extract the repository .zip file.
 
 > Given that the name of the sample is pretty long, and so are the name of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
 
-### Step 2:  Register the sample with your Azure Active Directory tenant
+### Step 2:  Register the sample application with your Azure Active Directory tenant
 
 There is one project in this sample. To register it, you can:
 
@@ -102,7 +102,7 @@ As a first step you'll need to:
      > Note that there are more than one redirect URIs. You'll need to add them from the **Authentication** tab later after the app has been created successfully.
 1. Select **Register** to create the application.
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
-1. In the list of pages for the app, select **Authentication**..
+1. From the app's Overview page, select the **Authentication** section.
    - In the Redirect URIs section, select **Web** in the combo-box and enter the following redirect URIs.
        - `https://localhost:44321/`
        - `https://localhost:44321/Account/AADTenantConnected`
@@ -118,14 +118,12 @@ As a first step you'll need to:
    - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
    - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
      so record it as soon as it is visible from the Azure portal.
-1. In the list of pages for the app, select **API permissions**
+1. Select the **API permissions** section
    - Click the **Add a permission** button and then,
    - Ensure that the **Microsoft APIs** tab is selected
    - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **email**, **profile**, **offline_access**, **User.Read**, **Group.Read.All**, **User.ReadBasic.All**. Use the search box if necessary.
    - Select the **Add permissions** button
-
-If you have an existing application that you have registered in the past, feel free to use that instead of creating a new registration.
 
 ### Step 3:  Configure the sample to use your Azure AD tenant
 
@@ -133,7 +131,7 @@ In the steps below, "ClientID" is the same as "Application ID" or "AppId".
 
 Open the solution in Visual Studio to configure the projects
 
-#### Configure the  project
+#### Configure the service project
 
 > Note: if you used the setup scripts, the changes below will have been applied for you
 
@@ -160,19 +158,203 @@ Then, navigate to the **Groups** page.  The app will try to query the Microsoft 
 
 The relevant code for this sample is in the following files:
 
-- Initial sign-in & basic permissions: `App_Start\Startup.Auth.cs` and `Controllers\AccountController.cs`. In particular, the actions on the controller have an Authorize attribute, which forces the user to sign-in. The application uses the [authorization code flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to sign-in the user. When the token is received (See method `OnAuthorizationCodeReceived`) in [Startup.Auth.cs#L58-L65](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/App_Start/Startup.Auth.cs#L58-L65),
-the application gets the token, which MSAL.NET stores into the token cache (See the `Utils\MsalSessionTokenCache` class). Then, when the controllers need to access the graph, they get a token by calling their private method `GetGraphAccessToken`
-[GetGraphAccessToken](https://github.com/Azure-Samples/active-directory-dotnet-admin-restricted-scopes-v2/blob/master/GroupManager/Controllers/UsersController.cs#L67-L73)
+### Sign In
 
-- Getting the list of users: `Controllers\UsersController.cs`
+As it is standard practice for ASP.NET MVC apps, the sign-in functionality is implemented with the OpenID Connect OWIN middleware. Here there's a relevant snippet from the middleware initialization:
 
-- Getting the list of groups: `Controllers\GroupsController.cs`
+```csharp
+app.UseOpenIdConnectAuthentication(
+     new OpenIdConnectAuthenticationOptions
+     {
+          Authority = Globals.Authority,
+          ClientId = Globals.ClientId,
+          RedirectUri = Globals.RedirectUri,
+          PostLogoutRedirectUri = Globals.RedirectUri,
+          Scope = Globals.BasicSignInScopes, // a basic set of permissions for user sign in & profile access
+          TokenValidationParameters = new TokenValidationParameters
+          {
+               // In a real application you would use ValidateIssuer = true for additional checks and security.
+               ValidateIssuer = false,
+               NameClaimType = "name",
+          },
+          Notifications = new OpenIdConnectAuthenticationNotifications()
+          {
+               SecurityTokenValidated = OnSecurityTokenValidated,
+               AuthorizationCodeReceived = OnAuthorizationCodeReceived,
+               AuthenticationFailed = OnAuthenticationFailed,
+          }
+     });
+```
 
-- Acquiring permissions from the tenant admin using the admin consent endpoint: `Controllers\AccountController.cs`
+Important things to notice:
+
+- The list of scopes includes both entries that are used for the sign-in function (`openid profile email`) and for the token acquisition function (`offline_access`  is required to obtain refresh_tokens).
+- The application then acquires an [access_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens) for [Microsoft Graph](https://graph.microsoft.com), with the permission (scope) [user.readbasic.all](https://docs.microsoft.com/en-us/graph/permissions-reference). An access token with this scope can read all users' basic profiles in a tenant. We will use this access token on `/Users/Index` page to list all the users on the organization.
+- In this sample, the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign-up function - and the sign-in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.
+
+### Initial token acquisition
+
+This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info, the  [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens)  and artifacts (in this case, an  [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of getting all the users in the organization.
+
+This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application from the controllers' actions to fetch access tokens after they are expired.
+
+The redemption takes place in the  `AuthorizationCodeReceived`  notification of the authorization middleware. Here there's the relevant code:
+
+```csharp
+private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
+{
+     IConfidentialClientApplication confidentialClient = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+
+     AuthenticationResult result = await confidentialClient.AcquireTokenByAuthorizationCode(new[] { "user.readbasic.all" }, context.Code).ExecuteAsync();
+}
+```
+
+Important things to notice:
+
+- The  `IConfidentialClientApplication`  is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
+- The scope requested by  `AcquireTokenByAuthorizationCode`  is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+- The instance of `IConfidentialClientApplication` is created and attached to an instance of `MSALPerUserMemoryTokenCache`, which is a custom cache implementation that uses a shared instance of a [MemoryCache](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache?view=netframework-4.8) to cache tokens. When it acquires the access token, MSAL also saves this token in its token cache. When any code in the rest of the project tries to acquire an access token for Microsoft Graph with the same scope (user.readbasic.all), MSAL will return the cached token.
+
+- In the code, the `IConfidentialClientApplication` is created in a function in the `MsalAppBuilder` class.
+
+```csharp
+public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
+{
+     IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+               .WithClientSecret(Globals.ClientSecret)
+               .WithRedirectUri(Globals.RedirectUri)
+               .WithAuthority(new Uri(Globals.Authority))
+               .Build();
+
+     // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache with our implementation
+     MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
+     return clientapp;
+}
+```
+
+Important things to notice:
+
+- The method builds an instance of the IConfidentialClientApplication using the new  [builder pattern introduced by MSAL v3.X](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-Applications).
+- `MSALPerUserMemoryTokenCache`  is a sample implementation of a custom MSAL token cache, which saves tokens in a  [MemoryCache](https://docs.microsoft.com/en-us/dotnet/framework/performance/caching-in-net-framework-applications)  instance shared across the web app. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
+
+### Consuming Graph API
+
+This sample consumes the graph api in two places: `UsersController.cs` and `GroupsController.cs`. To consume Graph, we need to have a token with the scopes required by the API then call the endpoint attaching this token on the request header as `Bearer`. 
+
+See details about [bearer token](https://tools.ietf.org/html/rfc6750). Lets see the `UsersController.cs` example first:
+
+```csharp
+try
+{
+     // Get a token for the Microsoft Graph
+     string token = await GetGraphAccessToken(userId);
+
+     // Construct the query
+     HttpClient client = new HttpClient();
+     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphUsersApi);
+     request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+     // Ensure a successful response
+     HttpResponseMessage response = await client.SendAsync(request);
+     response.EnsureSuccessStatusCode();
+
+     // Populate the data store with the first page of groups
+     string json = await response.Content.ReadAsStringAsync();
+     UserResponse result = JsonConvert.DeserializeObject<UserResponse>(json);
+     userList[tenantId] = result.value;
+}
+catch (MsalUiRequiredException ex)
+{
+     return new RedirectResult("/Account/SignIn");
+}
+```
+
+```csharp
+private async Task<string> GetGraphAccessToken()
+{
+     IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+     var userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+     AuthenticationResult result = await cc.AcquireTokenSilent(new string[] { "user.readbasic.all" }, userAccount).ExecuteAsync();
+     return result.AccessToken;
+}
+```
+
+Important things to notice:
+
+- Since we asked the scope `user.readbasic.all` on the sign in process, we have it cached already and the token is valid to consume the Graph API `https://graph.microsoft.com/v1.0/users`. So no additional consent is required in this case.
+- If the access token is expired MSAL will first attempt to get a fresh access token using the cached refresh token. If the refresh token itself is expired or the token cache is empty for the current user, the `MsalUiRequiredException` is thrown, and we redirect the user to the sign in page. 
+- In this particular sample, we are persisting the cache in memory just for simplicity, but this results in a problem. If you restart the application, the cache will be wiped out but the user will still be logged in by ASP.NET using their cookies. If we try to get a token for that user, a `MsalUiRequiredException` will be thrown and they will have to sign in again. This is done to re populate the cache. In a real-life application, you would likely want to save tokens in a long lived store instead.
+
+### Requesting additional consent
+
+Another place that we are consuming Graph API is on `GroupsController.cs`. Differently from the `UsersController.cs` example, the scope required here is `group.read.all` which is not included in the access token we obtained and cached during the sign in process.
+When the `GetGraphAccessToken` tries to get an access token with this scope from MSAL, MSAL does not find it in the cache. It throws a `MsalUiRequiredException` and we have to get the user back to the sign in screen and obtain an access token for the scope.
+
+```csharp
+try
+{
+	// Get a token for our admin-restricted set of scopes Microsoft Graph
+	string token = await GetGraphAccessToken(new string[] { "group.read.all" });
+
+	// Construct the groups query
+	HttpClient client = new HttpClient();
+	HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
+	request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+	// Ensure a successful response
+	HttpResponseMessage response = await client.SendAsync(request);
+	response.EnsureSuccessStatusCode();
+
+	// Populate the data store with the first page of groups
+	string json = await response.Content.ReadAsStringAsync();
+	GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
+	groupList[tenantId] = result.value;
+}
+
+catch (MsalUiRequiredException ex)
+{
+	if (ex.ErrorCode == "user_null")
+	{
+		return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
+	}
+
+	else if (ex.ErrorCode == "invalid_grant")
+	{
+		// If we got a token for the basic scopes, but not the admin-restricted scopes,
+		// then we need to ask the admin to grant permissions by by connecting their tenant.
+		return new RedirectResult("/Account/PermissionsRequired");
+	}
+	else
+		return new RedirectResult("/Error?message=" + ex.Message);
+
+}
+// Handle unexpected errors.
+catch (Exception ex)
+{
+	return new RedirectResult("/Error?message=" + ex.Message);
+}
+```
+
+```csharp
+private async Task<string> GetGraphAccessToken(string[] scopes)
+{
+	IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+	IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+	AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+	return result.AccessToken;
+}
+```
+
+Important things to notice:
+
+- We are requesting an Access Token with the scope `group.read.all`. To get this token we call [AcquireTokenSilent]([https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet](https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet)) method, which attempts to acquire it from the user token cache first avoiding extra call to the Identity Provider.
+- `group.read.all` requires a tenant admin to grant consent. So we redirect the user to the admin consent [endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#using-the-admin-consent-endpoint) where the tenant admin will be able to grant consent for this scope.
 
 ## How to deploy this sample to Azure
 
-This project has one WebApp  project. To deploy them to Azure Web Sites, you'll need, for each one, to:
+This project has one WebApp / Web API projects. To deploy them to Azure Web Sites, you'll need, for each one, to:
 
 - create an Azure Web Site
 - publish the Web App / Web APIs to the web site, and
@@ -205,7 +387,7 @@ In the left-hand navigation pane, select the **Azure Active Directory** service,
 
 Use [Stack Overflow](http://stackoverflow.com/questions/tagged/msal) to get support from the community.
 Ask your questions on Stack Overflow first and browse existing issues to see if someone has asked your question before.
-Make sure that your questions or comments are tagged with [ `msal` `dotnet`].
+Make sure that your questions or comments are tagged with [`adal` `msal` `dotnet`].
 
 If you find a bug in the sample, please raise the issue on [GitHub Issues](../../issues).
 
@@ -219,17 +401,24 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 ## More information
 
-For more information, see MSAL.NET's [conceptual documentation](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki):
+For more information, see ADAL.NET's conceptual documentation:
 
+> Provide links to the flows from the conceptual documentation and remove some that do not apply, like either keep ADAL or MSAL related links depending on the sample
+> for instance:
+
+- [Microsoft identity platform (Azure Active Directory for developers)](https://docs.microsoft.com/en-us/azure/active-directory/develop/)
 - [Quickstart: Register an application with the Microsoft identity platform (Preview)](https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app)
-- [Consent framework](https://docs.microsoft.com/en-us/azure/active-directory/develop/consent-framework)
-- [Permissions and consent in the Azure Active Directory v2.0 endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent)
+- [Quickstart: Configure a client application to access web APIs (Preview)](https://docs.microsoft.com/azure/active-directory/develop/quickstart-configure-app-access-web-apis)
+
 - [Understanding Azure AD application consent experiences](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-consent-experience)
-- [Recommended pattern to acquire a token](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-Tokens)
-- [Customizing Token cache serialization](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/token-cache-serialization)
-- [How to get consent for several resources](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-interactively#how-to-get-consent-for-several-resources)
-- [Comparing the Azure AD v2.0 endpoint with the v1.0 endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison)
-- [Problems with application consent](https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/application-sign-in-problem-first-party-microsoft?%2F%3FWT.mc_id=AKA_MS_Apps_Troubleshooting_Link#problems-with-application-consent)
+- [Understand user and admin consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-convert-app-to-be-multi-tenant#understand-user-and-admin-consent)
+- [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals)
+
+- [MSAL.NET's conceptual documentation](https://aka.ms/msal-net)
+- [Customizing Token cache serialization](https://aka.ms/msal-net-token-cache-serialization)
+- [Types of Applications](https://aka.ms/msal-net-client-applications)
+- [Acquiring Tokens](https://aka.ms/msal-net-acquiring-tokens)
+
+- [National Clouds](https://docs.microsoft.com/en-us/azure/active-directory/develop/authentication-national-cloud#app-registration-endpoints)
 
 For more information about how OAuth 2.0 protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
-
