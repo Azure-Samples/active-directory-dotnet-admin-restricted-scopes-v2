@@ -5,10 +5,18 @@ author: jmprieur
 level: 400
 client: ASP.NET Web App
 service: Microsoft Graph
-endpoint: AAD V2
+endpoint: Microsoft identity platform
+page_type: sample
+languages:
+  - csharp  
+products:
+  - azure
+  - azure-active-directory 
+  - dotnet
+  - office-ms-graph
 ---
 
-# Build an app with admin restricted scopes using the v2.0 endpoint
+# Build an app with admin restricted scopes using the Microsoft identity platform endpoint
 
 ![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/51/badge)
 
@@ -17,7 +25,7 @@ endpoint: AAD V2
 ### Overview
 
 Certain actions in the Azure Active Directory tenant are considered highly sensitive, such as deleting a user from the tenant, creating and managing applications, listing and assigning users to security groups.  Yet there are many valid reasons why applications need to perform these actions for their customers.  For this reason, some permissions are considered [admin restricted](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#permission-types), and require a tenant administrator to approve their use in applications.  
-This sample application shows how to use the [Azure AD v2.0 endpoint](http://aka.ms/aadv2) to access data in the [Microsoft Graph](https://graph.microsoft.io) that requires [consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-consent-experience) for permissions that have an administrative scope.
+This sample application shows how to use the [Microsoft identity platform endpoint](http://aka.ms/aadv2) to access data in the [Microsoft Graph](https://graph.microsoft.io) that requires [consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-consent-experience) for permissions that have an administrative scope.
 
 ![](ReadmeFiles/Topology.png)
 
@@ -28,7 +36,7 @@ Then, when the user tries to read a list of groups in the user's organization, i
 
 ![](ReadmeFiles/overview.png)
 
-For more information on the concepts used in this sample, be sure to read the [v2.0 scope and permission reference](https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes).
+For more information on the concepts used in this sample, be sure to read the [Permissions and consent in the Microsoft identity platform endpoint](https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent).
 
 > Looking for previous versions of this code sample? Check out the tags on the [releases](../../releases) GitHub page.
 
