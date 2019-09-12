@@ -5,7 +5,6 @@ languages:
 - csharp
 - powershell
 - html
-- other
 products:
 - azure
 description: "Certain actions in the Azure Active Directory tenant are considered highly sensitive, such as deleting a user from the tenant, creating and managing applications, listing and assigning users to security groups."
