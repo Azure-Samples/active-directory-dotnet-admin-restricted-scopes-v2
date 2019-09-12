@@ -1,20 +1,15 @@
 ---
-services: active-directory
-platforms: dotnet
-author: jmprieur
-level: 400
-client: ASP.NET Web App
-service: Microsoft Graph
-endpoint: Microsoft identity platform
 page_type: sample
 languages:
-  - csharp  
+- javascript
+- csharp
+- powershell
+- html
+- other
 products:
-  - azure
-  - azure-active-directory 
-  - dotnet
-  - office-ms-graph
-description: "Learn how to use Microsoft identity platform to access data in Microsoft Graph that requires consent for permissions that have administrator scope."
+- azure
+description: "Certain actions in the Azure Active Directory tenant are considered highly sensitive, such as deleting a user from the tenant, creating and managing applications, listing and assigning users to security groups."
+urlFragment: active-directory-dotnet-admin-restricted-scopes-v2
 ---
 
 # Build an app with admin restricted scopes using the Microsoft identity platform endpoint
