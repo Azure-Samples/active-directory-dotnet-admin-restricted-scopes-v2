@@ -22,7 +22,7 @@ urlFragment: active-directory-dotnet-admin-restricted-scopes-v2
 Certain actions in the Azure Active Directory tenant are considered highly sensitive, such as deleting a user from the tenant, creating and managing applications, listing and assigning users to security groups.  Yet there are many valid reasons why applications need to perform these actions for their customers.  For this reason, some permissions are considered [admin restricted](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#permission-types), and require a tenant administrator to approve their use in applications.  
 This sample application shows how to use the [Microsoft identity platform endpoint](http://aka.ms/aadv2) to access data in the [Microsoft Graph](https://graph.microsoft.io) that requires [consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-consent-experience) for permissions that have an administrative scope.
 
-![](ReadmeFiles/Topology.png)
+![Topology](ReadmeFiles/Topology.png)
 
 ### Scenario
 
