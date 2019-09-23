@@ -7,7 +7,7 @@ languages:
 - html
 products:
 - azure
-description: "Certain actions in the Azure Active Directory tenant are considered highly sensitive, such as deleting a user from the tenant, creating and managing applications, listing and assigning users to security groups."
+description: "The app is built as an ASP.NET 4.5 MVC application, using the OWIN OpenID Connect middleware to sign-in users."
 urlFragment: active-directory-dotnet-admin-restricted-scopes-v2
 ---
 
