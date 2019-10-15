@@ -48,11 +48,6 @@ namespace GroupManager.Utils
         /// </summary>
         private HttpContextBase HttpContext = null;
 
-        /// <summary>
-        /// The internal handle to the client's instance of the Cache
-        /// </summary>
-        private ITokenCache UserTokenCache;
-
         /// <summary>Initializes a new instance of the <see cref="MSALPerUserSessionTokenCache"/> class.</summary>
         /// <param name="tokenCache">The token cache.</param>
         /// <param name="httpcontext">The current HttpContext.</param>
@@ -75,11 +70,9 @@ namespace GroupManager.Utils
         {
             this.HttpContext = httpcontext;
 
-            this.UserTokenCache = tokenCache;
-
-            this.UserTokenCache.SetBeforeAccess(this.UserTokenCacheBeforeAccessNotification);
-            this.UserTokenCache.SetAfterAccess(this.UserTokenCacheAfterAccessNotification);
-            this.UserTokenCache.SetBeforeWrite(this.UserTokenCacheBeforeWriteNotification);
+            tokenCache.SetBeforeAccess(UserTokenCacheBeforeAccessNotification);
+            tokenCache.SetAfterAccess(UserTokenCacheAfterAccessNotification);
+            tokenCache.SetBeforeWrite(UserTokenCacheBeforeWriteNotification);
 
             if (user == null)
             {
@@ -88,13 +81,12 @@ namespace GroupManager.Utils
             }
 
             this.SignedInUser = user;
-            this.LoadUserTokenCacheFromSession();
         }
 
         /// <summary>
         /// Loads the user token cache from http session.
         /// </summary>
-        public void LoadUserTokenCacheFromSession()
+        public void LoadUserTokenCacheFromSession(TokenCacheNotificationArgs args)
         {
             string cacheKey = this.GetSignedInUsersUniqueId();
 
@@ -104,7 +96,7 @@ namespace GroupManager.Utils
             SessionLock.EnterReadLock();
             try
             {
-                this.UserTokenCache.DeserializeMsalV3((byte[])this.HttpContext.Session[cacheKey]);
+                args.TokenCache.DeserializeMsalV3((byte[])this.HttpContext.Session[cacheKey]);
             }
             finally
             {
@@ -115,7 +107,7 @@ namespace GroupManager.Utils
         /// <summary>
         /// Persists the user token blob to the Http session.
         /// </summary>
-        public void PersistUserTokenCache()
+        public void PersistUserTokenCache(TokenCacheNotificationArgs args)
         {
             string cacheKey = this.GetSignedInUsersUniqueId();
 
@@ -127,7 +119,7 @@ namespace GroupManager.Utils
             try
             {
                 // Reflect changes in the persistence store
-                this.HttpContext.Session[cacheKey] = this.UserTokenCache.SerializeMsalV3();
+                this.HttpContext.Session[cacheKey] = args.TokenCache.SerializeMsalV3();
             }
             finally
             {
@@ -158,9 +150,6 @@ namespace GroupManager.Utils
             {
                 SessionLock.ExitWriteLock();
             }
-
-            // Nulls the currently deserialized instance
-            this.LoadUserTokenCacheFromSession();
         }
 
         /// <summary>
@@ -182,7 +171,7 @@ namespace GroupManager.Utils
 			// if the access operation resulted in a cache update
 			if (args.HasStateChanged)
 			{
-				this.PersistUserTokenCache();
+				this.PersistUserTokenCache(args);
 			}
         }
 
@@ -192,7 +181,7 @@ namespace GroupManager.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-			this.LoadUserTokenCacheFromSession();
+			this.LoadUserTokenCacheFromSession(args);
 		}
 
         /// <summary>

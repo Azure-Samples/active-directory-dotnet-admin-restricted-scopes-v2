@@ -28,119 +28,105 @@ using System.Web;
 
 namespace GroupManager.Utils
 {
-	/// <summary>
-	/// An implementation of token cache for Confidential clients backed by Http session.
-	/// </summary>
-	/// <seealso cref="https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/token-cache-serialization"/>
-	public class MSALAppSessionTokenCache
-	{
-		/// <summary>
-		/// The application cache key
-		/// </summary>
-		internal readonly string AppCacheId;
+    /// <summary>
+    /// An implementation of token cache for Confidential clients backed by Http session.
+    /// </summary>
+    /// <seealso cref="https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/token-cache-serialization"/>
+    public class MSALAppSessionTokenCache
+    {
+        /// <summary>
+        /// The application cache key
+        /// </summary>
+        internal readonly string AppCacheId;
 
-		/// <summary>
-		/// The HTTP context being used by this app
-		/// </summary>
-		internal HttpContextBase HttpContextInstance = null;
+        /// <summary>
+        /// The HTTP context being used by this app
+        /// </summary>
+        internal HttpContextBase HttpContextInstance = null;
 
-		/// <summary>
-		/// The internal handle to the client's instance of the Cache
-		/// </summary>
-		private ITokenCache ApptokenCache;
+        private static ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
-		private static ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MSALAppSessionTokenCache"/> class.
+        /// </summary>
+        /// <param name="tokenCache">The client's instance of the token cache.</param>
+        /// <param name="clientId">The application's id (Client ID).</param>
+        public MSALAppSessionTokenCache(ITokenCache tokenCache, string clientId, HttpContextBase httpcontext)
+        {
+            this.HttpContextInstance = httpcontext;
+            this.AppCacheId = clientId + "_AppTokenCache";
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="MSALAppSessionTokenCache"/> class.
-		/// </summary>
-		/// <param name="tokenCache">The client's instance of the token cache.</param>
-		/// <param name="clientId">The application's id (Client ID).</param>
-		public MSALAppSessionTokenCache(ITokenCache tokenCache, string clientId, HttpContextBase httpcontext)
-		{
-			this.HttpContextInstance = httpcontext;
-			this.AppCacheId = clientId + "_AppTokenCache";
+            tokenCache.SetBeforeAccess(AppTokenCacheBeforeAccessNotification);
+            tokenCache.SetAfterAccess(AppTokenCacheAfterAccessNotification);
+            tokenCache.SetBeforeWrite(AppTokenCacheBeforeWriteNotification);
+        }
 
-			if (this.ApptokenCache == null)
-			{
-				this.ApptokenCache = tokenCache;
-				this.ApptokenCache.SetBeforeAccess(this.AppTokenCacheBeforeAccessNotification);
-				this.ApptokenCache.SetAfterAccess(this.AppTokenCacheAfterAccessNotification);
-				this.ApptokenCache.SetBeforeWrite(this.AppTokenCacheBeforeWriteNotification);
-			}
+        /// <summary>
+        /// if you want to ensure that no concurrent write take place, use this notification to place a lock on the entry
+        /// </summary>
+        /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
+        private void AppTokenCacheBeforeWriteNotification(TokenCacheNotificationArgs args)
+        {
+            // Since we are using a SessionCache ,whose methods are threads safe, we need not to do anything in this handler.
+        }
 
-			this.LoadAppTokenCacheFromSession();
-		}
+        /// <summary>
+        /// Loads the application's tokens from session cache.
+        /// </summary>
+        private void LoadAppTokenCacheFromSession(TokenCacheNotificationArgs args)
+        {
+            SessionLock.EnterReadLock();
 
-		/// <summary>
-		/// if you want to ensure that no concurrent write take place, use this notification to place a lock on the entry
-		/// </summary>
-		/// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
-		private void AppTokenCacheBeforeWriteNotification(TokenCacheNotificationArgs args)
-		{
-			// Since we are using a SessionCache ,whose methods are threads safe, we need not to do anything in this handler.
-		}
+            args.TokenCache.DeserializeMsalV3((byte[])HttpContextInstance.Session[this.AppCacheId]);
 
-		/// <summary>
-		/// Loads the application's tokens from session cache.
-		/// </summary>
-		private void LoadAppTokenCacheFromSession()
-		{
-			SessionLock.EnterReadLock();
+            SessionLock.ExitReadLock();
+        }
 
-			this.ApptokenCache.DeserializeMsalV3((byte[])HttpContextInstance.Session[this.AppCacheId]);
+        /// <summary>
+        /// Persists the application token's to session cache.
+        /// </summary>
+        private void PersistAppTokenCache(TokenCacheNotificationArgs args)
+        {
+            SessionLock.EnterWriteLock();
 
-			SessionLock.ExitReadLock();
-		}
+            // Reflect changes in the persistence store
+            HttpContextInstance.Session[this.AppCacheId] = args.TokenCache.SerializeMsalV3();
 
-		/// <summary>
-		/// Persists the application token's to session cache.
-		/// </summary>
-		private void PersistAppTokenCache()
-		{
-			SessionLock.EnterWriteLock();
+            SessionLock.ExitWriteLock();
+        }
 
-			// Reflect changes in the persistence store
-			HttpContextInstance.Session[this.AppCacheId] = this.ApptokenCache.SerializeMsalV3();
+        /// <summary>
+        /// Clears the TokenCache's copy of this user's cache.
+        /// </summary>
+        public void Clear()
+        {
+            SessionLock.EnterWriteLock();
 
-			SessionLock.ExitWriteLock();
-		}
+            HttpContextInstance.Session[this.AppCacheId] = null;
 
-		/// <summary>
-		/// Clears the TokenCache's copy of this user's cache.
-		/// </summary>
-		public void Clear()
-		{
-			SessionLock.EnterWriteLock();
+            SessionLock.ExitWriteLock();
+        }
 
-			HttpContextInstance.Session[this.AppCacheId] = null;
+        /// <summary>
+        /// Triggered right before MSAL needs to access the cache. Reload the cache from the persistence store in case it changed since the last access.
+        /// </summary>
+        /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
+        private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
+        {
+            this.LoadAppTokenCacheFromSession(args);
+        }
 
-			SessionLock.ExitWriteLock();
-
-			// Nulls the currently deserialized instance
-			this.LoadAppTokenCacheFromSession();
-		}
-
-		/// <summary>
-		/// Triggered right before MSAL needs to access the cache. Reload the cache from the persistence store in case it changed since the last access.
-		/// </summary>
-		/// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
-		private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
-		{
-			this.LoadAppTokenCacheFromSession();
-		}
-
-		/// <summary>
-		/// Triggered right after MSAL accessed the cache.
-		/// </summary>
-		/// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
-		private void AppTokenCacheAfterAccessNotification(TokenCacheNotificationArgs args)
-		{
-			// if the access operation resulted in a cache update
-			if (args.HasStateChanged)
-			{
-				this.PersistAppTokenCache();
-			}
-		}
-	}
+        /// <summary>
+        /// Triggered right after MSAL accessed the cache.
+        /// </summary>
+        /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
+        private void AppTokenCacheAfterAccessNotification(TokenCacheNotificationArgs args)
+        {
+            // if the access operation resulted in a cache update
+            if (args.HasStateChanged)
+            {
+                this.PersistAppTokenCache(args);
+            }
+        }
+    }
 }
