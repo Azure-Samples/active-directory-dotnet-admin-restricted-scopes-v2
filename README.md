@@ -352,7 +352,7 @@ private async Task<string> GetGraphAccessToken(string[] scopes)
 
 Important things to notice:
 
-- We are requesting an Access Token with the scope `group.read.all`. To get this token we call [AcquireTokenSilent]([https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet](https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet)) method, which attempts to acquire it from the user token cache first avoiding extra call to the Identity Provider.
+- We are requesting an Access Token with the scope `group.read.all`. To get this token we call [AcquireTokenSilent](https://docs.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=azure-dotnet) method, which attempts to acquire it from the user token cache first avoiding extra call to the Identity Provider.
 - `group.read.all` requires a tenant admin to grant consent. So we redirect the user to the admin consent [endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#using-the-admin-consent-endpoint) where the tenant admin will be able to grant consent for this scope.
 
 ## How to deploy this sample to Azure
