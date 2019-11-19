@@ -30,6 +30,8 @@ Then, when the user tries to read a list of groups in the user's organization, i
 
 For more information on the concepts used in this sample, be sure to read the [v2.0 scope and permission reference](https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes).
 
+- Developers who wish to gain good familiarity of programming for Microsoft Graph are advised to go through the [An introduction to Microsoft Graph for developers](https://www.youtube.com/watch?v=EBbnpFdB92A) recorded session. 
+
 > Looking for previous versions of this code sample? Check out the tags on the [releases](../../releases) GitHub page.
 
 ## How to run this sample
