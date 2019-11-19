@@ -1,93 +1,90 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System.Web;
-using System.Web.Mvc;
-using GroupManager.Models;
+﻿using GroupManager.Models;
 using GroupManager.Utils;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Microsoft.Identity.Client.AppConfig;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using System.Web.Mvc;
 
 namespace GroupManager.Controllers
 {
-    public class GroupsController : Controller
-    {
-        // For simplicity, this sample uses an in-memory data store instead of a db.
-        private ConcurrentDictionary<string, List<Group>> groupList = new ConcurrentDictionary<string, List<Group>>();
+	public class GroupsController : Controller
+	{
+		// For simplicity, this sample uses an in-memory data store instead of a db.
+		private ConcurrentDictionary<string, List<Group>> groupList = new ConcurrentDictionary<string, List<Group>>();
 
-        [Authorize]
-        // GET: Group
-        public async Task<ActionResult> Index()
-        {
-            string tenantId = ClaimsPrincipal.Current.FindFirst(Globals.TenantIdClaimType).Value;
-            string userId = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
+		[Authorize]
+		// GET: Group
+		public async Task<ActionResult> Index()
+		{
+			string tenantId = ClaimsPrincipal.Current.FindFirst(Globals.TenantIdClaimType).Value;
 
-            try
-            {
-                // Try to get a token for our basic set of scopes
-                string token = await GetGraphAccessToken(userId, new string[] { "user.readbasic.all" });
-            }
-            catch (MsalException ex)
-            {
-                if (ex.ErrorCode == "failed_to_acquire_token_silently")
-                {
-                    // If basic token acquisition failed, the user has either revoked our basic permissions
-                    // or their tokens have expired.  We need to ask them to sign-in again.
-                    return new RedirectResult("/Account/AADTenantConnected");
-                }
+			try
+			{
+				// Get a token for our admin-restricted set of scopes Microsoft Graph
+				string token = await GetGraphAccessToken(new string[] { "group.read.all" });
 
-                return new RedirectResult("/Error?message=" + ex.Message);
-            }
+				// Construct the groups query
+				HttpClient client = new HttpClient();
+				HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
+				request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            try
-            {
-                // Get a token for our admin-restricted set of scopes Microsoft Graph
-                string token = await GetGraphAccessToken(userId, new string[] { "group.read.all" });
+				// Ensure a successful response
+				HttpResponseMessage response = await client.SendAsync(request);
+				response.EnsureSuccessStatusCode();
 
-                // Construct the groups query
-                HttpClient client = new HttpClient();
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+				// Populate the data store with the first page of groups
+				string json = await response.Content.ReadAsStringAsync();
+				GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
+				groupList[tenantId] = result.value;
+			}
+			catch (MsalUiRequiredException ex)
+			{
+				if (ex.ErrorCode == "user_null")
+				{
+					/*
+					  If the tokens have expired or become invalid for any reason, ask the user to sign in again.
+					  Another cause of this exception is when you restart the app using InMemory cache.
+					  It will get wiped out while the user will be authenticated still because of their cookies, requiring the TokenCache to be initialized again
+					  through the sign in flow.
+					*/
+					return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
+				}
+				else if (ex.ErrorCode == "invalid_grant")
+				{
+					// If we got a token for the basic scopes, but not the admin-restricted scopes,
+					// then we need to ask the admin to grant permissions by by connecting their tenant.
+					return new RedirectResult("/Account/PermissionsRequired");
+				}
+				else
+					return new RedirectResult("/Error?message=" + ex.Message);
+			}
+			// Handle unexpected errors.
+			catch (Exception ex)
+			{
+				return new RedirectResult("/Error?message=" + ex.Message);
+			}
 
-                // Ensure a successful response
-                HttpResponseMessage response = await client.SendAsync(request);
-                response.EnsureSuccessStatusCode();
+			ViewBag.TenantId = tenantId;
+			return View(groupList[tenantId]);
+		}
 
-                // Populate the data store with the first page of groups
-                string json = await response.Content.ReadAsStringAsync();
-                GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
-                groupList[tenantId] = result.value;
-            }
-            catch (MsalUiRequiredException)
-            {
-                // If we got a token for the basic scopes, but not the admin-restricted scopes,
-                // then we need to ask the admin to grant permissions by by connecting their tenant.
-                return new RedirectResult("/Account/PermissionsRequired");
-            }
-            // Handle unexpected errors.
-            catch (Exception ex)
-            {
-                return new RedirectResult("/Error?message=" + ex.Message);
-            }
+		/// <summary>
+		/// We obtain access token for Microsoft Graph with the scope "group.read.all". Since this access token was not obtained during the initial sign in process 
+		/// (OnAuthorizationCodeReceived), the user will be prompted to consent again.
+		/// </summary>
+		/// <returns></returns>
+		private async Task<string> GetGraphAccessToken(string[] scopes)
+		{
+			IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+			IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
 
-            ViewBag.TenantId = tenantId;
-            return View(groupList[tenantId]);
-        }
-
-        // Use MSAL to get a the token we need for the Microsoft Graph
-        private async Task<string> GetGraphAccessToken(string userId, string[] scopes)
-        {
-            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
-
-            AuthenticationResult result = await cc.AcquireTokenSilentAsync(scopes, ClaimsPrincipal.Current.ToIAccount());
-            return result.AccessToken;
-        }
-    }
+			AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+			return result.AccessToken;
+		}
+	}
 }
