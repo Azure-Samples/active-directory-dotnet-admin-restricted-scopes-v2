@@ -33,6 +33,8 @@ Then, when the user tries to read a list of groups in the user's organization, i
 
 For more information on the concepts used in this sample, be sure to read the [Permissions and consent in the Microsoft identity platform endpoint](https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent).
 
+- Developers who wish to gain good familiarity of programming for Microsoft Graph are advised to go through the [An introduction to Microsoft Graph for developers](https://www.youtube.com/watch?v=EBbnpFdB92A) recorded session.
+
 > Looking for previous versions of this code sample? Check out the tags on the [releases](../../releases) GitHub page.
 
 ## How to run this sample
@@ -297,56 +299,56 @@ When the `GetGraphAccessToken` tries to get an access token with this scope from
 ```csharp
 try
 {
-	// Get a token for our admin-restricted set of scopes Microsoft Graph
-	string token = await GetGraphAccessToken(new string[] { "group.read.all" });
+    // Get a token for our admin-restricted set of scopes Microsoft Graph
+    string token = await GetGraphAccessToken(new string[] { "group.read.all" });
 
-	// Construct the groups query
-	HttpClient client = new HttpClient();
-	HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
-	request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    // Construct the groups query
+    HttpClient client = new HttpClient();
+    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Globals.MicrosoftGraphGroupsApi);
+    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-	// Ensure a successful response
-	HttpResponseMessage response = await client.SendAsync(request);
-	response.EnsureSuccessStatusCode();
+    // Ensure a successful response
+    HttpResponseMessage response = await client.SendAsync(request);
+    response.EnsureSuccessStatusCode();
 
-	// Populate the data store with the first page of groups
-	string json = await response.Content.ReadAsStringAsync();
-	GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
-	groupList[tenantId] = result.value;
+    // Populate the data store with the first page of groups
+    string json = await response.Content.ReadAsStringAsync();
+    GroupResponse result = JsonConvert.DeserializeObject<GroupResponse>(json);
+    groupList[tenantId] = result.value;
 }
 
 catch (MsalUiRequiredException ex)
 {
-	if (ex.ErrorCode == "user_null")
-	{
-		return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
-	}
+    if (ex.ErrorCode == "user_null")
+    {
+        return new RedirectResult("/Account/SignIn/?redirectUrl=/Groups");
+    }
 
-	else if (ex.ErrorCode == "invalid_grant")
-	{
-		// If we got a token for the basic scopes, but not the admin-restricted scopes,
-		// then we need to ask the admin to grant permissions by by connecting their tenant.
-		return new RedirectResult("/Account/PermissionsRequired");
-	}
-	else
-		return new RedirectResult("/Error?message=" + ex.Message);
+    else if (ex.ErrorCode == "invalid_grant")
+    {
+        // If we got a token for the basic scopes, but not the admin-restricted scopes,
+        // then we need to ask the admin to grant permissions by by connecting their tenant.
+        return new RedirectResult("/Account/PermissionsRequired");
+    }
+    else
+        return new RedirectResult("/Error?message=" + ex.Message);
 
 }
 // Handle unexpected errors.
 catch (Exception ex)
 {
-	return new RedirectResult("/Error?message=" + ex.Message);
+    return new RedirectResult("/Error?message=" + ex.Message);
 }
 ```
 
 ```csharp
 private async Task<string> GetGraphAccessToken(string[] scopes)
 {
-	IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
-	IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+    IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+    IAccount userAccount = await cc.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
 
-	AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
-	return result.AccessToken;
+    AuthenticationResult result = await cc.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+    return result.AccessToken;
 }
 ```
 
