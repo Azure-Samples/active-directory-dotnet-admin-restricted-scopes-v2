@@ -30,6 +30,7 @@ using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
+using Microsoft.Owin.Host.SystemWeb;
 using Owin;
 using System;
 using System.Security.Claims;
@@ -64,7 +65,10 @@ namespace GroupManager
                         SecurityTokenValidated = OnSecurityTokenValidated,
                         AuthorizationCodeReceived = OnAuthorizationCodeReceived,
                         AuthenticationFailed = OnAuthenticationFailed,
-                    }
+                    },
+                    // Handling SameSite cookie according to https://docs.microsoft.com/en-us/aspnet/samesite/owin-samesite
+                    CookieManager = new SameSiteCookieManager(
+                                     new SystemWebCookieManager())
                 });
         }
 
