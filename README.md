@@ -159,6 +159,8 @@ Then, navigate to the **Groups** page.  The app will try to query the Microsoft 
 
 > Did the sample not work for you as expected? Did you encounter issues trying this sample? Then please reach out to us using the [GitHub Issues](../../issues) page.
 
+> [Consider taking a moment to share your experience with us.](https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR73pcsbpbxNJuZCMKN0lURpUNVZZSDNQWjlZMVczQzU1V0RKRExaOTdOOSQlQCN0PWcu)
+
 ## About the code
 
 The relevant code for this sample is in the following files:
